@@ -1,0 +1,18 @@
+{
+  "navigation": {
+    "home": "الرئيسية",
+    "overview": "نظرة عامة",
+    "map": "الخريطة",
+    "gallery": "معرض الصور",
+    "reviews": "التقييمات",
+    "availability": "التوفر",
+    "contact": "اتصل بنا"
+  },
+  "actions": {
+    "signIn": "تسجيل الدخول",
+    "language": "EN"
+  },
+  "brand": {
+    "title": "فيلا جوري"
+  }
+}

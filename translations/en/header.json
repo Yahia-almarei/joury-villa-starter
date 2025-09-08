@@ -1,0 +1,18 @@
+{
+  "navigation": {
+    "home": "Home",
+    "overview": "Overview",
+    "map": "Map", 
+    "gallery": "Gallery",
+    "reviews": "Reviews",
+    "availability": "Availability",
+    "contact": "Contact"
+  },
+  "actions": {
+    "signIn": "Sign In",
+    "language": "عربي"
+  },
+  "brand": {
+    "title": "Joury Villa"
+  }
+}

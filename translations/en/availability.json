@@ -1,0 +1,57 @@
+{
+  "calendar": {
+    "legend": {
+      "selectedDates": "Selected dates",
+      "unavailable": "Unavailable",
+      "standardPricing": "Standard pricing",
+      "customPricing": "Custom pricing"
+    },
+    "customPricingTooltip": "Custom pricing",
+    "nights": "nights"
+  },
+  "dateSelection": {
+    "checkIn": "Check-in",
+    "checkOut": "Check-out"
+  },
+  "bookingSummary": {
+    "title": "Booking Summary",
+    "adult": "Adult:",
+    "adults": "adults",
+    "children": "Children:",
+    "childrenCount": "children",
+    "addChildren": "+ Add children"
+  },
+  "coupon": {
+    "title": "Have a coupon?",
+    "availableCoupons": "Available Coupons:",
+    "minNights": "Min",
+    "nights": "nights",
+    "noCouponsAvailable": "No coupons available for your selected dates",
+    "enterCouponCode": "Or enter a coupon code:",
+    "placeholder": "Enter coupon code",
+    "apply": "Apply",
+    "couponApplied": "Coupon Applied",
+    "remove": "Remove",
+    "percentOff": "% off",
+    "amountOff": "off",
+    "discount": "(discount)"
+  },
+  "pricing": {
+    "calculatingPricing": "Calculating pricing...",
+    "customPricingApplied": "Custom Pricing Applied",
+    "total": "Total"
+  },
+  "booking": {
+    "calculating": "Calculating...",
+    "bookNow": "Book Now"
+  },
+  "benefits": {
+    "paymentProtected": "Your payment is protected",
+    "instantConfirmation": "Instant booking confirmation"
+  },
+  "help": {
+    "title": "Need Help?",
+    "chatOnWhatsApp": "Chat on WhatsApp",
+    "contactHost": "Contact Host"
+  }
+}

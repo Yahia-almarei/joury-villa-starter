@@ -1,0 +1,57 @@
+{
+  "calendar": {
+    "legend": {
+      "selectedDates": "التواريخ المختارة",
+      "unavailable": "غير متاح",
+      "standardPricing": "تسعير قياسي",
+      "customPricing": "تسعير خاص"
+    },
+    "customPricingTooltip": "تسعير خاص",
+    "nights": "ليالي"
+  },
+  "dateSelection": {
+    "checkIn": "تسجيل الوصول",
+    "checkOut": "تسجيل المغادرة"
+  },
+  "bookingSummary": {
+    "title": "ملخص الحجز",
+    "adult": "بالغ:",
+    "adults": "بالغين",
+    "children": "أطفال:",
+    "childrenCount": "أطفال",
+    "addChildren": "+ إضافة أطفال"
+  },
+  "coupon": {
+    "title": "هل لديك كوبون؟",
+    "availableCoupons": "الكوبونات المتاحة:",
+    "minNights": "حد أدنى",
+    "nights": "ليالي",
+    "noCouponsAvailable": "لا توجد كوبونات متاحة للتواريخ المختارة",
+    "enterCouponCode": "أو أدخل رمز الكوبون:",
+    "placeholder": "أدخل رمز الكوبون",
+    "apply": "تطبيق",
+    "couponApplied": "تم تطبيق الكوبون",
+    "remove": "إزالة",
+    "percentOff": "% خصم",
+    "amountOff": "خصم",
+    "discount": "(خصم)"
+  },
+  "pricing": {
+    "calculatingPricing": "حساب التسعير...",
+    "customPricingApplied": "تم تطبيق التسعير الخاص",
+    "total": "الإجمالي"
+  },
+  "booking": {
+    "calculating": "حساب...",
+    "bookNow": "احجز الآن"
+  },
+  "benefits": {
+    "paymentProtected": "دفعتك محمية",
+    "instantConfirmation": "تأكيد فوري للحجز"
+  },
+  "help": {
+    "title": "تحتاج مساعدة؟",
+    "chatOnWhatsApp": "المحادثة عبر واتساب",
+    "contactHost": "اتصل بالمضيف"
+  }
+}

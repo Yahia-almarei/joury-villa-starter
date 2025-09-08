@@ -1,0 +1,26 @@
+{
+  "header": {
+    "title": "Contact Your Host",
+    "subtitle": "Get in touch with questions about your stay at Joury Villa. We're here to help make your visit perfect!"
+  },
+  "getInTouch": {
+    "title": "Get in Touch",
+    "phone": {
+      "title": "WhatsApp",
+      "clickToChat": "Click to chat on WhatsApp"
+    },
+    "location": {
+      "title": "Location",
+      "address": "Jericho, Palestinian Territories",
+      "description": "Historic city near the Dead Sea",
+      "clickToView": "Click to view on map"
+    }
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "checkAvailability": "Check Availability & Book",
+    "viewDetails": "View Villa Details",
+    "browseGallery": "Browse Photo Gallery",
+    "viewReviews": "View Guest Reviews"
+  }
+}
