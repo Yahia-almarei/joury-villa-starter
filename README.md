@@ -5,7 +5,7 @@ A comprehensive booking platform for Joury Villa, a luxury vacation rental in hi
 ## 🌟 Features
 
 ### 🏠 Property Management
-- **Comprehensive Booking System**: Per-adult/child pricing with seasonal rates
+- **Comprehensive Booking System**: Per-night pricing with seasonal rates
 - **Advanced Availability Engine**: Real-time availability checking with conflict resolution
 - **Flexible Pricing**: Base rates, seasonal pricing, cleaning fees, and VAT calculation
 - **Booking Rules**: Minimum/maximum nights, guest limits, and hold periods
@@ -17,13 +17,13 @@ A comprehensive booking platform for Joury Villa, a luxury vacation rental in hi
 - **Audit Logging**: Complete activity tracking for security and compliance
 
 ### 📧 Email System
-- **Multilingual Templates**: Email templates in English, Arabic, and Hebrew
+- **Multilingual Templates**: Email templates in English, Arabic
 - **Automated Notifications**: Booking confirmations, approvals, reminders
 - **Calendar Integration**: .ics file attachments for easy calendar import
 - **Localized Content**: RTL support and culturally appropriate messaging
 
 ### 🌍 Internationalization
-- **Multi-Language Support**: English, Arabic (RTL), and Hebrew (RTL)
+- **Multi-Language Support**: English, Arabic 
 - **Cultural Localization**: Proper date formats, currency, and cultural preferences
 - **Dynamic Language Switching**: Client-side language selection with persistence
 - **RTL Layout Support**: Complete right-to-left layout adjustments
