@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/lib/use-translation'
 
 interface CalendarProps {
   viewType: 'month' | 'week'
@@ -28,7 +29,13 @@ interface CalendarEvent {
 }
 
 export function Calendar({ viewType, showAvailability = true, showReservations = true, showBlocked = true, selectedAction = 'none', onCalendarUpdate }: CalendarProps) {
+  const { t } = useTranslation('admin')
   const [currentDate, setCurrentDate] = useState(new Date())
+
+  const getTranslatedMonth = (date: Date) => {
+    const monthKey = format(date, 'MMMM').toLowerCase()
+    return t(`pricing.customDatePricing.monthNames.${monthKey}` as any) || format(date, 'MMMM')
+  }
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedRange, setSelectedRange] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null })
@@ -36,10 +43,13 @@ export function Calendar({ viewType, showAvailability = true, showReservations =
   // Function to fetch calendar data
   const fetchCalendarData = async () => {
       try {
-        const timestamp = Date.now()
+        // Get data for current month only to improve performance
+        const monthStart = startOfMonth(currentDate).toISOString().split('T')[0]
+        const monthEnd = endOfMonth(currentDate).toISOString().split('T')[0]
+
         const [reservationsResponse, blockedPeriodsResponse] = await Promise.all([
-          fetch(`/api/admin/reservations?_=${timestamp}`, { cache: 'no-store' }),
-          fetch(`/api/admin/blocked-periods?_=${timestamp}`, { cache: 'no-store' })
+          fetch(`/api/admin/reservations?startDate=${monthStart}&endDate=${monthEnd}`),
+          fetch(`/api/admin/blocked-periods?startDate=${monthStart}&endDate=${monthEnd}`)
         ])
         
         const reservationsData = await reservationsResponse.json()
@@ -51,8 +61,8 @@ export function Calendar({ viewType, showAvailability = true, showReservations =
         if (reservationsData.success) {
           console.log('Raw reservations data:', reservationsData.reservations)
           const reservationEvents = reservationsData.reservations.map((reservation: any) => {
-            // Consider PAID, APPROVED, AWAITING_APPROVAL as confirmed (blocking)
-            const isConfirmed = ['PAID', 'APPROVED', 'AWAITING_APPROVAL'].includes(reservation.status.toUpperCase())
+            // Only PAID and APPROVED are confirmed - AWAITING_APPROVAL should show as pending
+            const isConfirmed = ['PAID', 'APPROVED'].includes(reservation.status.toUpperCase())
             console.log(`Reservation ${reservation.id}: status=${reservation.status}, isConfirmed=${isConfirmed}`)
             
             return {
@@ -101,7 +111,7 @@ export function Calendar({ viewType, showAvailability = true, showReservations =
   // Fetch real reservations and blocked periods data
   useEffect(() => {
     fetchCalendarData()
-  }, [])
+  }, [currentDate]) // Refetch when month changes
   
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -413,7 +423,7 @@ export function Calendar({ viewType, showAvailability = true, showReservations =
       {/* Calendar Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">
-          {format(currentDate, 'MMMM yyyy')}
+          {getTranslatedMonth(currentDate)} {format(currentDate, 'yyyy')}
         </h2>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={prevMonth}>
@@ -424,10 +434,10 @@ export function Calendar({ viewType, showAvailability = true, showReservations =
             size="sm" 
             onClick={() => setCurrentDate(new Date())}
           >
-            Today
+            {t('calendar.navigation.today')}
           </Button>
           <Button variant="outline" size="sm" onClick={fetchCalendarData}>
-            Refresh
+            {t('calendar.navigation.refresh')}
           </Button>
           <Button variant="outline" size="sm" onClick={nextMonth}>
             <ChevronRight className="w-4 h-4" />
@@ -437,7 +447,15 @@ export function Calendar({ viewType, showAvailability = true, showReservations =
       
       {/* Days of Week Header */}
       <div className="grid grid-cols-7 gap-0">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+        {[
+          t('pricing.customDatePricing.dayNames.sunday'),
+          t('pricing.customDatePricing.dayNames.monday'),
+          t('pricing.customDatePricing.dayNames.tuesday'),
+          t('pricing.customDatePricing.dayNames.wednesday'),
+          t('pricing.customDatePricing.dayNames.thursday'),
+          t('pricing.customDatePricing.dayNames.friday'),
+          t('pricing.customDatePricing.dayNames.saturday')
+        ].map(day => (
           <div key={day} className="p-3 text-center text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200">
             {day}
           </div>

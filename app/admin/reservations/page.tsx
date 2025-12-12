@@ -38,8 +38,6 @@ interface Reservation {
   check_in: string
   check_out: string
   nights: number
-  adults: number
-  children: number
   total: number
   status: string
   created_at: string
@@ -70,8 +68,13 @@ export default function AdminReservationsPage() {
   const fetchReservations = async () => {
     setLoading(true)
     try {
-      // Use the same API route as the calendar for consistent data
-      const response = await fetch('/api/admin/reservations')
+      // Fetch only recent reservations for better performance
+      const lastMonth = new Date()
+      lastMonth.setMonth(lastMonth.getMonth() - 3) // Last 3 months only
+      const startDate = lastMonth.toISOString().split('T')[0]
+      const endDate = new Date().toISOString().split('T')[0]
+
+      const response = await fetch(`/api/admin/reservations?startDate=${startDate}&endDate=${endDate}`)
       const data = await response.json()
       
       if (!data.success) {
@@ -110,28 +113,24 @@ export default function AdminReservationsPage() {
   
   const handleApprove = async (reservationId: string) => {
     try {
-      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/admin/reservations/${reservationId}/approve`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          status: 'APPROVED',
-          approved_at: new Date().toISOString()
-        })
+        }
       })
-      
+
       const data = await response.json()
-      
+
       if (!data.success) {
         console.error('Error approving reservation:', data.error)
         alert('Failed to approve reservation')
         return
       }
-      
-      // Refresh the list
+
+      alert('Reservation approved successfully!')
       fetchReservations()
-      
+
     } catch (error) {
       console.error('Error:', error)
       alert('Failed to approve reservation')
@@ -139,32 +138,62 @@ export default function AdminReservationsPage() {
   }
   
   const handleDecline = async (reservationId: string) => {
+    const reason = prompt('Please provide a reason for declining (optional):')
     try {
-      const response = await fetch(`/api/admin/reservations/${reservationId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/admin/reservations/${reservationId}/decline`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          status: 'CANCELLED',
-          cancelled_at: new Date().toISOString(),
-          cancellation_reason: 'Declined by admin'
-        })
+        body: JSON.stringify({ reason })
       })
-      
+
       const data = await response.json()
-      
+
       if (!data.success) {
         console.error('Error declining reservation:', data.error)
         alert('Failed to decline reservation')
         return
       }
-      
+
+      alert('Reservation declined successfully!')
       fetchReservations()
-      
+
     } catch (error) {
       console.error('Error:', error)
       alert('Failed to decline reservation')
+    }
+  }
+
+  const handleCancelBooking = async (reservationId: string) => {
+    if (!confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+      return
+    }
+
+    const reason = prompt('Please provide a reason for cancellation (optional):')
+    try {
+      const response = await fetch(`/api/admin/reservations/${reservationId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason })
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        console.error('Error cancelling reservation:', data.error)
+        alert('Failed to cancel booking')
+        return
+      }
+
+      alert('Booking cancelled successfully!')
+      fetchReservations()
+
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Failed to cancel booking')
     }
   }
   
@@ -213,7 +242,7 @@ export default function AdminReservationsPage() {
         <div className="flex items-center space-x-3">
           <Button variant="outline" size="sm">
             <Download className="w-4 h-4 mr-2" />
-            {t('reservations.actions.export')}
+            Export
           </Button>
         </div>
       </div>
@@ -307,22 +336,6 @@ export default function AdminReservationsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">{t('reservations.statistics.totalGuests')}</p>
-                <p className="text-2xl font-bold">
-                  {reservations
-                    .filter(r => ['PAID', 'APPROVED'].includes(r.status))
-                    .reduce((sum, r) => sum + r.adults + r.children, 0)
-                  }
-                </p>
-              </div>
-              <Users className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
       </div>
       
       {/* Reservations Table */}
@@ -351,10 +364,9 @@ export default function AdminReservationsPage() {
                   <tr>
                     <th className="text-left p-4 font-medium text-gray-700">{t('reservations.table.headers.guest')}</th>
                     <th className="text-left p-4 font-medium text-gray-700">{t('reservations.table.headers.dates')}</th>
-                    <th className="text-left p-4 font-medium text-gray-700">{t('reservations.table.headers.guests')}</th>
                     <th className="text-left p-4 font-medium text-gray-700">{t('reservations.table.headers.amount')}</th>
                     <th className="text-left p-4 font-medium text-gray-700">{t('reservations.table.headers.status')}</th>
-                    <th className="text-left p-4 font-medium text-gray-700">{t('reservations.table.headers.created')}</th>
+                    <th className="text-left p-4 font-medium text-gray-700">ID</th>
                     <th className="text-right p-4 font-medium text-gray-700">{t('reservations.table.headers.actions')}</th>
                   </tr>
                 </thead>
@@ -383,12 +395,6 @@ export default function AdminReservationsPage() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <div className="text-sm">
-                          {reservation.adults} {t('reservations.table.guestCount.adults')}
-                          {reservation.children > 0 && `, ${reservation.children} ${t('reservations.table.guestCount.children')}`}
-                        </div>
-                      </td>
-                      <td className="p-4">
                         <div className="font-medium">₪{reservation.total.toLocaleString()}</div>
                       </td>
                       <td className="p-4">
@@ -399,7 +405,7 @@ export default function AdminReservationsPage() {
                       </td>
                       <td className="p-4">
                         <div className="text-sm text-gray-600">
-                          {format(new Date(reservation.created_at), 'MMM d, yyyy')}
+                          #{reservation.id.slice(-8)}
                         </div>
                       </td>
                       <td className="p-4 text-right">
@@ -437,7 +443,7 @@ export default function AdminReservationsPage() {
                               <DropdownMenuItem asChild>
                                 <Link href={`/admin/reservations/${reservation.id}`}>
                                   <Edit className="w-4 h-4 mr-2" />
-                                  {t('reservations.actions.viewDetails')}
+                                  {t('reservations.actions.reservationDetails')}
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem>
@@ -454,7 +460,10 @@ export default function AdminReservationsPage() {
                                 </DropdownMenuItem>
                               </RescheduleDialog>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleCancelBooking(reservation.id)}
+                              >
                                 <XCircle className="w-4 h-4 mr-2" />
                                 {t('reservations.actions.cancelBooking')}
                               </DropdownMenuItem>

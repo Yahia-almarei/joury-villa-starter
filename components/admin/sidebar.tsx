@@ -17,7 +17,10 @@ import {
   BarChart3,
   Settings,
   Home,
-  LogOut
+  LogOut,
+  MessageSquare,
+  FileText,
+  Clipboard
 } from 'lucide-react'
 
 
@@ -28,7 +31,16 @@ export function AdminSidebar() {
   
   const handleSignOut = async () => {
     setIsSigningOut(true)
-    await signOut({ callbackUrl: '/' })
+    try {
+      // Clear the session using custom endpoint
+      await fetch('/api/signout', { method: 'POST' })
+      // Force redirect to home page
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Sign out error:', error)
+      // Fallback: force redirect anyway
+      window.location.href = '/'
+    }
   }
   
   const navigation = [
@@ -37,8 +49,11 @@ export function AdminSidebar() {
     { name: t('sidebar.reservations'), href: '/admin/reservations', icon: ClipboardList },
     { name: t('sidebar.pricing'), href: '/admin/pricing', icon: DollarSign },
     { name: t('sidebar.coupons'), href: '/admin/coupons', icon: Ticket },
-    { name: t('sidebar.policies'), href: '/admin/policies', icon: Shield },
+    { name: 'Security Deposit', href: '/admin/security-deposit', icon: Shield },
+    { name: t('sidebar.policies'), href: '/admin/policies', icon: Clipboard },
+    { name: t('sidebar.bookingPolicies'), href: '/admin/booking-policies', icon: FileText },
     { name: t('sidebar.users'), href: '/admin/users', icon: Users },
+    { name: t('sidebar.reviews'), href: '/admin/reviews', icon: MessageSquare },
     { name: t('sidebar.reports'), href: '/admin/reports', icon: BarChart3 },
   ]
   

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trash2, ArrowLeft } from 'lucide-react'
+import { signOut } from 'next-auth/react'
 
 interface CustomerProfile {
   full_name: string
@@ -26,6 +27,8 @@ export default function ProfilePage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
@@ -83,6 +86,38 @@ export default function ProfilePage() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true)
+      return
+    }
+
+    setIsDeleting(true)
+    setError('')
+
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      // Sign out the user and redirect to home
+      await signOut({ callbackUrl: '/' })
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to delete account')
+      setShowDeleteConfirm(false)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
 
   if (status === 'loading' || isLoading) {
     return (
@@ -101,6 +136,17 @@ export default function ProfilePage() {
   return (
     <div className="container py-8 max-w-2xl">
       <div className="mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/account')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Account
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold">Edit Profile</h1>
         <p className="text-muted-foreground">
           Update your personal information and preferences
@@ -194,6 +240,67 @@ export default function ProfilePage() {
             >
               Cancel
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="mt-8 border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-600 flex items-center gap-2">
+            <Trash2 className="h-5 w-5" />
+            Danger Zone
+          </CardTitle>
+          <CardDescription>
+            Permanently delete your account and all associated data
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h4 className="font-semibold text-red-800 mb-2">Delete Account</h4>
+            <p className="text-sm text-red-700 mb-4">
+              This action cannot be undone. This will permanently delete your account,
+              profile information, and remove all associated data from our servers.
+            </p>
+            {showDeleteConfirm && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>
+                  Are you absolutely sure? This action cannot be undone and will permanently
+                  delete your account and all your data.
+                </AlertDescription>
+              </Alert>
+            )}
+            <div className="flex gap-3">
+              {showDeleteConfirm ? (
+                <>
+                  <Button
+                    variant="destructive"
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                    className="flex-1"
+                  >
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Yes, Delete My Account
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeleting}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Account
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

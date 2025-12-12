@@ -13,53 +13,53 @@ export default function MapPage() {
             {/* Left Side - About Jericho */}
             <div className="space-y-6">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">{t('aboutJericho.title')}</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">About Miami Beach</h3>
                 <div className="space-y-4 text-gray-700">
                   <p className="text-lg leading-relaxed">
-                    {t('aboutJericho.paragraph1')}
+                    Miami Beach is a south Florida island city, connected by bridges to mainland Miami. Wide beaches stretch from North Shore Open Space Park, past palm-lined Lummus Park to South Pointe Park.
                   </p>
                   <p>
-                    {t('aboutJericho.paragraph2')}
+                    The southern end, South Beach, is famous for its international cachet with models and celebrities, and its early-20th-century architecture in the Art Deco Historic district with pastel-colored buildings, especially on Ocean Drive.
                   </p>
                   <div className="mt-3">
                     <a
-                      href="https://maps.app.goo.gl/DzfaFf7iVMuotAbT6?g_st=ipc"
+                      href="https://www.google.com/maps/search/?api=1&query=123+Ocean+Drive+Miami+Beach+FL"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                     >
-                      {t('aboutJericho.googleMapsLink')}
+                      View on Google Maps
                     </a>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
                     <MapPin className="w-4 h-4" />
-                    <span>{t('aboutJericho.locationNote')}</span>
+                    <span>123 Ocean Drive, Miami Beach, FL 33139</span>
                   </div>
                 </div>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="text-xl font-semibold text-gray-900 mb-4">{t('quickFacts.title')}</h4>
+                <h4 className="text-xl font-semibold text-gray-900 mb-4">Quick Facts</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">{t('quickFacts.elevation.label')}</span>
-                    <span className="font-medium">{t('quickFacts.elevation.value')}</span>
+                    <span className="text-gray-600">Elevation</span>
+                    <span className="font-medium">1.2 m (4 ft)</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">{t('quickFacts.climate.label')}</span>
-                    <span className="font-medium">{t('quickFacts.climate.value')}</span>
+                    <span className="text-gray-600">Climate</span>
+                    <span className="font-medium">Tropical Monsoon</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">{t('quickFacts.population.label')}</span>
-                    <span className="font-medium">{t('quickFacts.population.value')}</span>
+                    <span className="text-gray-600">Population</span>
+                    <span className="font-medium">~80,000</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">{t('quickFacts.founded.label')}</span>
-                    <span className="font-medium">{t('quickFacts.founded.value')}</span>
+                    <span className="text-gray-600">Founded</span>
+                    <span className="font-medium">1915</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-600">{t('quickFacts.unesco.label')}</span>
-                    <span className="font-medium">{t('quickFacts.unesco.value')}</span>
+                    <span className="text-gray-600">Known For</span>
+                    <span className="font-medium">Art Deco & Nightlife</span>
                   </div>
                 </div>
               </div>
@@ -71,17 +71,17 @@ export default function MapPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-5 h-5 text-blue-600" />
-                    <span className="font-medium">{t('map.title')}</span>
+                    <span className="font-medium">Location Map</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Clock className="w-4 h-4" />
-                    <span>{t('map.subtitle')}</span>
+                    <span>5 mins to Downtown</span>
                   </div>
                 </div>
               </div>
               <div className="relative h-96 lg:h-[400px]">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3396.65!2d35.465917!3d31.824056!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1502e4f2f2f2f2f2f%3A0x1234567890abcdef!2s31.824056%2C35.468417!5e0!3m2!1sen!2s!4v1690000000000!5m2!1sen!2s&markers=31.824056,35.468417"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3592.967963772266!2d-80.134567!3d25.769012!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88d9b48d6d6d6d6d%3A0x1234567890abcdef!2s123%20Ocean%20Dr%2C%20Miami%20Beach%2C%20FL%2033139!5e0!3m2!1sen!2sus!4v1690000000000!5m2!1sen!2sus"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -99,31 +99,31 @@ export default function MapPage() {
         {/* Nearby Attractions */}
         <div className="mb-16">
           <div className="bg-gray-50 rounded-lg p-6">
-            <h4 className="text-xl font-semibold text-gray-900 mb-4">{t('attractions.title')}</h4>
+            <h4 className="text-xl font-semibold text-gray-900 mb-4">Nearby Attractions</h4>
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">{t('attractions.mountOfTemptation.name')}</span>
-                <span className="font-medium text-right">{t('attractions.mountOfTemptation.distance')}</span>
+                <span className="text-gray-600">South Beach</span>
+                <span className="font-medium text-right">0.1 miles</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">{t('attractions.botanicalGardens.name')}</span>
-                <span className="font-medium text-right">{t('attractions.botanicalGardens.distance')}</span>
+                <span className="text-gray-600">Art Deco Historic District</span>
+                <span className="font-medium text-right">0.2 miles</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">{t('attractions.hishamsPalace.name')}</span>
-                <span className="font-medium text-right">{t('attractions.hishamsPalace.distance')}</span>
+                <span className="text-gray-600">Lincoln Road Mall</span>
+                <span className="font-medium text-right">1.5 miles</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">{t('attractions.deadSea.name')}</span>
-                <span className="font-medium text-right">{t('attractions.deadSea.distance')}</span>
+                <span className="text-gray-600">Ocean Drive</span>
+                <span className="font-medium text-right">0.0 miles</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                <span className="text-gray-600">{t('attractions.cableCar.name')}</span>
-                <span className="font-medium text-right">{t('attractions.cableCar.distance')}</span>
+                <span className="text-gray-600">Lummus Park</span>
+                <span className="font-medium text-right">0.3 miles</span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="text-gray-600">{t('attractions.ancientTell.name')}</span>
-                <span className="font-medium text-right">{t('attractions.ancientTell.distance')}</span>
+                <span className="text-gray-600">Miami Beach Botanical Garden</span>
+                <span className="font-medium text-right">2.0 miles</span>
               </div>
             </div>
           </div>

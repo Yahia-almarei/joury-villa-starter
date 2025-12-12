@@ -9,9 +9,11 @@ export async function POST(req: NextRequest) {
     // await requireAdmin()
     
     const data = await req.json()
+    console.log('📝 Received pricing data:', data)
     
     // Get or create property record
     let property = await db.getProperty()
+    console.log('📊 Current property:', property)
     
     if (!property) {
       // Create default property if it doesn't exist
@@ -20,30 +22,30 @@ export async function POST(req: NextRequest) {
         address: 'Jericho, Palestinian Territories',
         timezone: 'Asia/Jerusalem',
         currency: 'ILS',
-        base_price_night: data.weekdayPriceNight ?? data.weekday_price_night ?? 500,
-        price_per_adult: data.weekendPriceNight ?? data.weekend_price_night ?? 600, // Store weekend price in adult field temporarily
-        price_per_child: 0,
-        cleaning_fee: data.cleaningFee ?? data.cleaning_fee ?? 100,
-        vat_percent: data.vatPercent ?? data.vat_percent ?? 17,
-        min_nights: data.minNights ?? data.min_nights ?? 2,
-        max_nights: data.maxNights ?? data.max_nights ?? 14,
-        max_adults: data.maxAdults ?? data.max_adults ?? 8,
-        max_children: data.maxChildren ?? data.max_children ?? 0
+        weekday_price_night: data.weekdayPriceNight,
+        weekend_price_night: data.weekendPriceNight,
+        cleaning_fee: data.cleaningFee ?? 100,
+        vat_percent: data.vatPercent ?? 17,
+        min_nights: data.minNights ?? 2,
+        max_nights: data.maxNights ?? 14,
+        max_adults: data.maxAdults ?? 8,
+        max_children: data.maxChildren ?? 0
       })
     } else {
       // Update existing property
       property = await db.updateProperty(property.id, {
-        base_price_night: data.weekdayPriceNight ?? data.weekday_price_night,
-        price_per_adult: data.weekendPriceNight ?? data.weekend_price_night, // Store weekend price in adult field temporarily
-        price_per_child: 0,
-        cleaning_fee: data.cleaningFee ?? data.cleaning_fee,
-        vat_percent: data.vatPercent ?? data.vat_percent,
-        min_nights: data.minNights ?? data.min_nights,
-        max_nights: data.maxNights ?? data.max_nights,
-        max_adults: data.maxAdults ?? data.max_adults,
-        max_children: data.maxChildren ?? data.max_children
+        weekday_price_night: data.weekdayPriceNight,
+        weekend_price_night: data.weekendPriceNight,
+        cleaning_fee: data.cleaningFee,
+        vat_percent: data.vatPercent,
+        min_nights: data.minNights,
+        max_nights: data.maxNights,
+        max_adults: data.maxAdults,
+        max_children: data.maxChildren
       })
     }
+    
+    console.log('✅ Updated property:', property)
     
     // Log the action (skip for now since we don't have authenticated admin user)
     try {
@@ -81,13 +83,14 @@ export async function GET(req: NextRequest) {
     // await requireAdmin()
     
     const property = await db.getProperty()
+    console.log('📊 Retrieved property for GET:', property)
     
     return NextResponse.json({
       success: true,
       property: property ? {
         ...property,
-        weekdayPriceNight: property.base_price_night || 500,
-        weekendPriceNight: property.price_per_adult || Math.round((property.base_price_night || 500) * 1.2),
+        weekdayPriceNight: property.weekday_price_night,
+        weekendPriceNight: property.weekend_price_night,
         cleaningFee: property.cleaning_fee || 100,
         vatPercent: property.vat_percent || 17,
         minNights: property.min_nights || 2,
@@ -96,8 +99,8 @@ export async function GET(req: NextRequest) {
         maxChildren: property.max_children || 0
       } : {
         name: 'Joury Villa',
-        weekdayPriceNight: 500,
-        weekendPriceNight: 600,
+        weekdayPriceNight: null,
+        weekendPriceNight: null,
         cleaningFee: 100,
         vatPercent: 17,
         minNights: 2,

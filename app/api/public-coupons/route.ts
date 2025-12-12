@@ -3,43 +3,47 @@ import { createServerClient } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerClient()
+    // Get booking dates from query parameters
+    const { searchParams } = new URL(request.url)
+    const checkIn = searchParams.get('checkIn')
+    const checkOut = searchParams.get('checkOut')
 
-    // Get only public, active coupons
-    const { data: coupons, error } = await supabase
-      .from('coupons')
-      .select('id, code, percent_off, amount_off, min_nights, valid_from, valid_to')
-      .eq('is_active', true)
-      .eq('is_public', true)
-      .order('created_at', { ascending: false })
+    // Fetch from admin API to ensure consistency
+    const adminApiUrl = new URL('/api/admin/coupons', request.url)
+    const response = await fetch(adminApiUrl.toString())
+    const adminData = await response.json()
 
-    if (error) {
-      console.error('Error fetching public coupons:', error)
+    if (!adminData.success) {
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch coupons'
       }, { status: 500 })
     }
 
-    // Filter out expired coupons on the server side
-    const now = new Date()
-    const activeCoupons = (coupons || []).filter(coupon => {
-      // Check if coupon is not expired
-      if (coupon.valid_to && new Date(coupon.valid_to) < now) {
+    // Filter for public, active coupons with date validation
+    const publicCoupons = (adminData.coupons || []).filter(coupon => {
+      // Basic filters
+      if (!coupon.is_active || !coupon.is_public) {
         return false
       }
-      
-      // Check if coupon is already valid
-      if (coupon.valid_from && new Date(coupon.valid_from) > now) {
-        return false
+
+      // Date validation if booking dates are provided
+      if (checkIn && checkOut && coupon.valid_from && coupon.valid_to) {
+        const bookingStart = new Date(checkIn)
+        const bookingEnd = new Date(checkOut)
+        const couponStart = new Date(coupon.valid_from)
+        const couponEnd = new Date(coupon.valid_to)
+
+        // Check if booking dates overlap with coupon validity period
+        return bookingStart >= couponStart && bookingEnd <= couponEnd
       }
-      
+
       return true
     })
 
     return NextResponse.json({
       success: true,
-      coupons: activeCoupons
+      coupons: publicCoupons
     })
 
   } catch (error) {

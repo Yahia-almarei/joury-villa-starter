@@ -11,8 +11,20 @@ export default auth(async (req) => {
   const isOnPhoneSetup = nextUrl.pathname === '/auth/phone-setup'
   const isOnCallbackHandler = nextUrl.pathname === '/auth/callback-handler'
 
-  // Log middleware activity for debugging
-  if (isLoggedIn && (nextUrl.pathname === '/' || isOnCallbackHandler)) {
+  // Skip expensive auth checks for purely public pages when not logged in
+  const purePublicPages = ['/', '/overview', '/gallery', '/policies', '/contact', '/map', '/reviews', '/availability']
+  if (!isLoggedIn && purePublicPages.includes(nextUrl.pathname)) {
+    return NextResponse.next()
+  }
+
+  // Also skip for public pages even when logged in, unless it's admin trying to access home
+  const publicPagesWhenLoggedIn = ['/overview', '/gallery', '/policies', '/contact', '/map', '/reviews', '/availability']
+  if (isLoggedIn && publicPagesWhenLoggedIn.includes(nextUrl.pathname)) {
+    return NextResponse.next()
+  }
+
+  // Log middleware activity for debugging (reduce logging for performance)
+  if (process.env.NODE_ENV === 'development' && isLoggedIn && (nextUrl.pathname === '/' || isOnCallbackHandler)) {
     console.log('🛡️ Middleware - User:', req.auth?.user?.email, 'Role:', req.auth?.user?.role, 'Path:', nextUrl.pathname)
   }
 
@@ -33,7 +45,8 @@ export default auth(async (req) => {
     '/availability',
     '/contact',
     '/gallery',
-    '/map'
+    '/map',
+    '/reviews'
   ]
 
   // Customer paths that require phone verification
@@ -61,16 +74,16 @@ export default auth(async (req) => {
     return NextResponse.next()
   }
 
-  // Redirect admin users to admin dashboard when they visit home page
+  // Redirect admin users to admin dashboard when they land on home page after sign-in
   if (isLoggedIn && nextUrl.pathname === '/' && req.auth?.user?.role === 'ADMIN') {
-    console.log('🚀 Middleware - Redirecting admin from home to /admin')
+    if (process.env.NODE_ENV === 'development') console.log('🚀 Middleware - Redirecting admin to /admin dashboard')
     return NextResponse.redirect(new URL('/admin', nextUrl))
   }
 
   // Redirect logged-in users away from auth pages (except callback handler which handles redirects)
   if (isLoggedIn && (isOnAuthRoute || isOnAdminLoginRoute) && !isOnPhoneSetup && !isOnCallbackHandler) {
     if (req.auth?.user?.role === 'ADMIN') {
-      console.log('🚀 Middleware - Redirecting admin from auth page to /admin')
+      if (process.env.NODE_ENV === 'development') console.log('🚀 Middleware - Redirecting admin from auth page to /admin')
       return NextResponse.redirect(new URL('/admin', nextUrl))
     }
     return NextResponse.redirect(new URL('/', nextUrl))
@@ -91,10 +104,10 @@ export default auth(async (req) => {
     const hasPhone = req.auth?.user?.hasPhone
     
     if (!hasPhone) {
-      console.log('🛡️ Middleware - Customer needs phone verification for:', nextUrl.pathname)
+      if (process.env.NODE_ENV === 'development') console.log('🛡️ Middleware - Customer needs phone verification for:', nextUrl.pathname)
       return NextResponse.redirect(new URL('/auth/phone-setup', nextUrl))
     } else {
-      console.log('🛡️ Middleware - Customer has phone, allowing access to:', nextUrl.pathname)
+      if (process.env.NODE_ENV === 'development') console.log('🛡️ Middleware - Customer has phone, allowing access to:', nextUrl.pathname)
     }
   }
 

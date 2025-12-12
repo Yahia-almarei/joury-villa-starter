@@ -1,0 +1,78 @@
+{
+  "hero": {
+    "title": "",
+    "noBookingFees": "No booking fees!"
+  },
+  "booking": {
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "checkAvailability": "Check Availability"
+  },
+  "howToBook": {
+    "title": "How to Book",
+    "subtitle": "Simple steps to reserve your stay at Joury Villa",
+    "checkDates": {
+      "title": "Check Dates",
+      "description": "Select your preferred check-in and check-out dates using our availability calendar."
+    },
+    "makeReservation": {
+      "title": "Make Reservation",
+      "description": "Complete your booking details and submit your reservation request."
+    },
+    "confirmation": {
+      "title": "Confirmation",
+      "description": "Receive confirmation and payment details within 24 hours."
+    }
+  },
+  "sections": {
+    "pool": {
+      "title": "Relax & Refresh by Your Private Pool",
+      "description": "Cool off and unwind in your own private swimming pool, surrounded by peace and privacy. Whether it's a morning dip, a sunny afternoon with family, or a cozy evening by the water, the pool at Joury Villa is all yours to enjoy."
+    },
+    "comfort": {
+      "title": "Comfort That Feels Like Home",
+      "description": "Stay in style with our warm wooden interiors and spacious bedrooms, designed for relaxation and comfort. From soft bedding to modern amenities, every detail of Joury Villa ensures a cozy and restful stay."
+    }
+  },
+  "amenities": {
+    "title": "Villa Amenities",
+    "subtitle": "Everything you need for a comfortable and memorable stay",
+    "privatePool": {
+      "title": "Private Pool",
+      "description": "Relax in our private swimming pool with garden views"
+    },
+    "freeWifi": {
+      "title": "Free Wi-Fi",
+      "description": "High-speed internet throughout the property"
+    },
+    "freeParking": {
+      "title": "Free Parking",
+      "description": "Secure on-site parking for your vehicles"
+    },
+    "fullKitchen": {
+      "title": "Full Kitchen",
+      "description": "Modern kitchen with all appliances and cookware"
+    },
+    "bbqArea": {
+      "title": "BBQ Area",
+      "description": "Outdoor barbecue area perfect for family gatherings"
+    }
+  },
+  "cta": {
+    "title": "Ready to Book Your Stay?",
+    "subtitle": "Experience the beauty and history of Jericho from the comfort of Joury Villa",
+    "checkAvailability": "Check Availability"
+  },
+  "footer": {
+    "title": "Joury Villa",
+    "description": "Your gateway to experiencing authentic Palestinian hospitality in the historic city of Jericho.",
+    "quickLinks": "Quick Links",
+    "home": "Home",
+    "bookNow": "Book Now",
+    "policies": "Policies",
+    "contact": "Contact",
+    "location": "Location",
+    "address": "Jericho, Palestinian Territories",
+    "copyright": "© 2024 Joury Villa. All rights reserved."
+  }
+}

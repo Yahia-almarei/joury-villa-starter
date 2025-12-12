@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { reviewStorage } from '@/lib/review-storage';
+import { reviewService } from '@/lib/review-service';
 
 // This endpoint is for admin use to approve/manage reviews
 // In production, add proper authentication middleware
@@ -9,20 +9,20 @@ export async function GET(request: NextRequest) {
     // Get all reviews including pending ones
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status'); // 'pending', 'approved', 'all'
-    
+
     let filteredReviews;
-    
+
     if (status === 'pending') {
-      filteredReviews = reviewStorage.getPendingReviews();
+      filteredReviews = await reviewService.getPendingReviews();
     } else if (status === 'approved') {
-      filteredReviews = reviewStorage.getApprovedReviews();
+      filteredReviews = await reviewService.getApprovedReviews();
     } else {
-      filteredReviews = reviewStorage.getAllReviews();
+      filteredReviews = await reviewService.getAllReviews();
     }
-    
+
     return NextResponse.json({
       success: true,
-      reviews: filteredReviews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+      reviews: filteredReviews,
       total: filteredReviews.length
     });
 
@@ -47,18 +47,14 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    let success = false;
-    
     if (action === 'approve') {
-      success = reviewStorage.approveReview(reviewId);
+      await reviewService.approveReview(reviewId);
     } else if (action === 'reject') {
-      success = reviewStorage.rejectReview(reviewId);
-    }
-    
-    if (!success) {
+      await reviewService.deleteReview(reviewId);
+    } else {
       return NextResponse.json(
-        { success: false, error: 'Review not found' },
-        { status: 404 }
+        { success: false, error: 'Invalid action' },
+        { status: 400 }
       );
     }
 
@@ -71,6 +67,67 @@ export async function PATCH(request: NextRequest) {
     console.error('Error updating review:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update review' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { reviewId, name, rating, comment, stayDate } = body;
+
+    if (!reviewId) {
+      return NextResponse.json(
+        { success: false, error: 'Missing reviewId' },
+        { status: 400 }
+      );
+    }
+
+    await reviewService.updateReview(reviewId, {
+      name,
+      rating,
+      comment,
+      stay_date: stayDate
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Review updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Error updating review:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to update review' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const reviewId = searchParams.get('reviewId');
+
+    if (!reviewId) {
+      return NextResponse.json(
+        { success: false, error: 'Missing reviewId' },
+        { status: 400 }
+      );
+    }
+
+    await reviewService.deleteReview(reviewId);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Review deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete review' },
       { status: 500 }
     );
   }

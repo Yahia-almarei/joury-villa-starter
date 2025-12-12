@@ -9,11 +9,15 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
+import { useLanguage } from '@/lib/language-context'
+import { useTranslation } from '@/lib/use-translation'
 
 function SignInForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState('')
-  
+  const { language } = useLanguage()
+  const { t } = useTranslation('auth')
+
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
   const urlError = searchParams.get('error')
@@ -31,11 +35,11 @@ function SignInForm() {
         prompt: 'select_account',
         redirect: true
       })
-      
+
       console.log('🚀 Sign-in result:', result)
     } catch (error) {
       console.error('Google sign-in error:', error)
-      setError('An error occurred during Google sign in.')
+      setError(t('errors.signInError'))
       setIsGoogleLoading(false)
     }
   }
@@ -44,22 +48,22 @@ function SignInForm() {
   const getErrorMessage = (error: string) => {
     switch (error) {
       case 'CredentialsSignin':
-        return 'Invalid email or password.'
+        return t('errors.invalidCredentials')
       case 'EmailNotVerified':
-        return 'Please verify your email address before signing in.'
+        return t('errors.emailNotVerified')
       case 'AccountBlocked':
-        return 'Your account has been disabled. Please contact support.'
+        return t('errors.accountBlocked')
       default:
-        return 'An error occurred during sign in.'
+        return t('errors.signInError')
     }
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md" dir={language === 'ar' ? 'rtl' : 'ltr'}>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t('signIn.title')}</CardTitle>
           <CardDescription>
-            Sign in to your Joury Villa account
+            {t('signIn.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,12 +78,12 @@ function SignInForm() {
             >
               {isGoogleLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in with Google...
+                  <Loader2 className={`${language === 'ar' ? 'ml-2' : 'mr-2'} h-4 w-4 animate-spin`} />
+                  {t('signIn.signingIn')}
                 </>
               ) : (
                 <>
-                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                  <svg className={`${language === 'ar' ? 'ml-2' : 'mr-2'} h-4 w-4`} viewBox="0 0 24 24">
                     <path
                       fill="currentColor"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -97,7 +101,7 @@ function SignInForm() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Continue with Google
+                  {t('signIn.continueWithGoogle')}
                 </>
               )}
             </Button>
@@ -113,9 +117,9 @@ function SignInForm() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
+              {t('signIn.noAccount')}{' '}
               <Link href="/auth/signup" className="text-primary hover:underline">
-                Sign up
+                {t('signIn.signUpLink')}
               </Link>
             </p>
           </div>

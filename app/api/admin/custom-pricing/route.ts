@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
         error: 'Start date and end date are required'
       }, { status: 400 })
     }
-    
+
     // Get property ID if not provided
     let actualPropertyId = propertyId
     if (!actualPropertyId) {
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       }
       actualPropertyId = property.id
     }
-    
+
     const customPricing = await db.getCustomPricingForDateRange(
       actualPropertyId,
       startDate,
@@ -68,9 +68,9 @@ export async function POST(req: NextRequest) {
     console.log('Admin authentication verified');
     
     const body = await req.json()
-    const { dates, pricePerNight, pricePerAdult, pricePerChild, notes, propertyId } = body
-    
-    console.log('Request body:', { dates, pricePerNight, pricePerAdult, pricePerChild, notes, propertyId });
+    const { dates, pricePerNight, notes, propertyId } = body
+
+    console.log('Request body:', { dates, pricePerNight, notes, propertyId });
     
     if (!dates || !Array.isArray(dates) || dates.length === 0) {
       console.log('Error: Dates array is required');
@@ -125,8 +125,6 @@ export async function POST(req: NextRequest) {
         // Update existing entry
         await db.updateCustomPricing(existing[0].id, {
           price_per_night: pricePerNight,
-          price_per_adult: pricePerAdult || null,
-          price_per_child: pricePerChild || null,
           notes: notes || null
         })
       } else {
@@ -136,23 +134,13 @@ export async function POST(req: NextRequest) {
           property_id: actualPropertyId,
           date,
           price_per_night: pricePerNight,
-          price_per_adult: pricePerAdult || null,
-          price_per_child: pricePerChild || null,
           notes: notes || null
         })
         console.log('Created entry result:', result);
       }
     }
     
-    // Log the action
-    await db.createAuditLog({
-      action: 'CUSTOM_PRICING_UPDATED',
-      target_type: 'custom_pricing',
-      target_id: actualPropertyId,
-      payload: { dates, pricePerNight, pricePerAdult, pricePerChild, notes },
-      created_at: new Date().toISOString()
-    })
-    
+
     return NextResponse.json({
       success: true,
       message: `Custom pricing set for ${dates.length} date(s)`
@@ -206,7 +194,7 @@ export async function DELETE(req: NextRequest) {
       }
       actualPropertyId = property.id
     }
-    
+
     // Delete custom pricing for selected dates
     for (const date of dates) {
       const existing = await db.getCustomPricingForDateRange(actualPropertyId, date, date)
@@ -215,14 +203,6 @@ export async function DELETE(req: NextRequest) {
       }
     }
     
-    // Log the action
-    await db.createAuditLog({
-      action: 'CUSTOM_PRICING_DELETED',
-      target_type: 'custom_pricing',
-      target_id: actualPropertyId,
-      payload: { dates },
-      created_at: new Date().toISOString()
-    })
     
     return NextResponse.json({
       success: true,

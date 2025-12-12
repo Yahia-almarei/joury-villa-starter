@@ -6,13 +6,30 @@ export async function GET(req: NextRequest) {
   try {
     // Verify admin access
     await requireAdmin()
-    
-    // Get only active reservations for admin calendar view (exclude cancelled)
-    const allReservations = await db.findReservationsByStatus('ALL', 100)
-    const activeReservations = allReservations.filter(reservation => 
+
+    const { searchParams } = new URL(req.url)
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+
+    // If date range provided, filter by dates for performance
+    if (startDate && endDate) {
+      const dateFilteredReservations = await db.getReservationsByDateRange(startDate, endDate)
+      const activeReservations = dateFilteredReservations.filter(reservation =>
+        reservation.status !== 'CANCELLED' && reservation.status !== 'DECLINED'
+      )
+
+      return NextResponse.json({
+        success: true,
+        reservations: activeReservations
+      })
+    }
+
+    // Fallback to all reservations (limit to recent for performance)
+    const allReservations = await db.findReservationsByStatus('ALL', 50)
+    const activeReservations = allReservations.filter(reservation =>
       reservation.status !== 'CANCELLED' && reservation.status !== 'DECLINED'
     )
-    
+
     return NextResponse.json({
       success: true,
       reservations: activeReservations
@@ -44,9 +61,9 @@ export async function POST(req: NextRequest) {
     const reservationData = await req.json()
     
     // Validate required fields
-    const { user_id, check_in, check_out, adults, children, status, total, subtotal, fees, taxes } = reservationData
-    
-    if (!user_id || !check_in || !check_out || !adults) {
+    const { user_id, check_in, check_out, status, total } = reservationData
+
+    if (!user_id || !check_in || !check_out) {
       return NextResponse.json({
         success: false,
         error: 'Missing required fields'
@@ -89,16 +106,12 @@ export async function POST(req: NextRequest) {
       check_in,
       check_out,
       nights: reservationData.nights || Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)),
-      adults,
-      children: children || 0,
-      subtotal: subtotal || total || 0,
-      fees: fees || 0,
-      taxes: taxes || 0,
       total: total || 0,
       status: status || 'AWAITING_APPROVAL',
-      notes: reservationData.notes || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      guest_notes: reservationData.guest_notes || null,
+      admin_notes: reservationData.admin_notes || null,
+      coupon_code: reservationData.coupon_code || null,
+      discount_amount: reservationData.discount_amount || 0
     })
     
     return NextResponse.json({

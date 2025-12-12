@@ -9,13 +9,12 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, DollarSign, Save, Trash2, Calendar, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/lib/use-translation'
 
 interface CustomPrice {
   id: string
   date: string
   price_per_night: number
-  price_per_adult?: number
-  price_per_child?: number
   notes?: string
 }
 
@@ -24,13 +23,17 @@ interface CustomPricingCalendarProps {
 }
 
 export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendarProps) {
+  const { t } = useTranslation('admin')
   const [currentDate, setCurrentDate] = useState(new Date())
+
+  const getTranslatedMonth = (date: Date) => {
+    const monthKey = format(date, 'MMMM').toLowerCase() as keyof typeof t
+    return t(`pricing.customDatePricing.monthNames.${monthKey}` as any) || format(date, 'MMMM')
+  }
   const [customPrices, setCustomPrices] = useState<Map<string, CustomPrice>>(new Map())
   const [refreshKey, setRefreshKey] = useState(0)
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set())
   const [bulkPrice, setBulkPrice] = useState('')
-  const [bulkPricePerAdult, setBulkPricePerAdult] = useState('')
-  const [bulkPricePerChild, setBulkPricePerChild] = useState('')
   const [bulkNotes, setBulkNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [showBulkEditor, setShowBulkEditor] = useState(false)
@@ -102,8 +105,6 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
         body: JSON.stringify({
           dates: Array.from(selectedDates),
           pricePerNight: parseFloat(bulkPrice),
-          pricePerAdult: bulkPricePerAdult ? parseFloat(bulkPricePerAdult) : null,
-          pricePerChild: bulkPricePerChild ? parseFloat(bulkPricePerChild) : null,
           notes: bulkNotes || null
         })
       })
@@ -114,8 +115,6 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
         alert(data.message)
         setSelectedDates(new Set())
         setBulkPrice('')
-        setBulkPricePerAdult('')
-        setBulkPricePerChild('')
         setBulkNotes('')
         setShowBulkEditor(false)
         // Force a complete re-render by updating refresh key
@@ -200,17 +199,17 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="w-5 h-5" />
-          Custom Date Pricing
+          {t('pricing.customDatePricing.title')}
         </CardTitle>
         <CardDescription>
-          Set custom prices for specific dates. Click dates to select them, then use bulk actions.
+          {t('pricing.customDatePricing.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">
-            {format(currentDate, 'MMMM yyyy')}
+            {getTranslatedMonth(currentDate)} {format(currentDate, 'yyyy')}
           </h3>
           <div className="flex items-center space-x-2">
             <Button variant="outline" size="sm" onClick={prevMonth}>
@@ -221,7 +220,7 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
               size="sm" 
               onClick={() => setCurrentDate(new Date())}
             >
-              Today
+              {t('pricing.customDatePricing.today')}
             </Button>
             <Button variant="outline" size="sm" onClick={nextMonth}>
               <ChevronRight className="w-4 h-4" />
@@ -231,7 +230,15 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
 
         {/* Days of Week Header */}
         <div className="grid grid-cols-7 gap-0 mb-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          {[
+            t('pricing.customDatePricing.dayNames.sunday'),
+            t('pricing.customDatePricing.dayNames.monday'), 
+            t('pricing.customDatePricing.dayNames.tuesday'),
+            t('pricing.customDatePricing.dayNames.wednesday'),
+            t('pricing.customDatePricing.dayNames.thursday'),
+            t('pricing.customDatePricing.dayNames.friday'),
+            t('pricing.customDatePricing.dayNames.saturday')
+          ].map(day => (
             <div key={day} className="p-2 text-center text-sm font-medium text-gray-700 bg-gray-50">
               {day}
             </div>
@@ -267,13 +274,6 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
                       <div className="text-xs font-semibold text-green-700">
                         ₪{customPrice.price_per_night}
                       </div>
-                      {(customPrice.price_per_adult !== undefined || customPrice.price_per_child !== undefined) && (
-                        <div className="text-xs text-green-600">
-                          {customPrice.price_per_adult !== undefined && customPrice.price_per_adult !== null && `A:₪${customPrice.price_per_adult}`}
-                          {customPrice.price_per_adult !== undefined && customPrice.price_per_adult !== null && customPrice.price_per_child !== undefined && customPrice.price_per_child !== null && ' '}
-                          {customPrice.price_per_child !== undefined && customPrice.price_per_child !== null && `C:₪${customPrice.price_per_child}`}
-                        </div>
-                      )}
                       {customPrice.notes && (
                         <div className="text-xs text-gray-500 truncate" title={customPrice.notes}>
                           {customPrice.notes}
@@ -293,7 +293,7 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-blue-900">
-                  {selectedDates.size} date{selectedDates.size !== 1 ? 's' : ''} selected
+                  {selectedDates.size} {selectedDates.size === 1 ? t('pricing.customDatePricing.dateSelected') : t('pricing.customDatePricing.datesSelected')}
                 </p>
                 <p className="text-sm text-blue-700">
                   {Array.from(selectedDates).slice(0, 3).join(', ')}
@@ -307,7 +307,7 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Set Price
+                  {t('pricing.customDatePricing.setPrice')}
                 </Button>
                 <Button
                   size="sm"
@@ -316,14 +316,14 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
                   className="text-red-600 border-red-200 hover:bg-red-50"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
-                  Remove
+                  {t('pricing.customDatePricing.remove')}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setSelectedDates(new Set())}
                 >
-                  Clear Selection
+                  {t('pricing.customDatePricing.clearSelection')}
                 </Button>
               </div>
             </div>
@@ -334,9 +334,9 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
         {showBulkEditor && (
           <div className="border border-gray-200 rounded-lg p-4 mb-4">
             <h4 className="font-medium mb-3">Set Custom Pricing</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="bulk-price">Price per Night *</Label>
+                <Label htmlFor="bulk-price">{t('pricing.customDatePricing.pricePerNight')} *</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
@@ -351,37 +351,7 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
                 </div>
               </div>
               <div>
-                <Label htmlFor="bulk-price-adult">Price per Additional Adult</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="bulk-price-adult"
-                    type="number"
-                    placeholder="50"
-                    value={bulkPricePerAdult}
-                    onChange={(e) => setBulkPricePerAdult(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Leave empty to use property default</p>
-              </div>
-              <div>
-                <Label htmlFor="bulk-price-child">Price per Child</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="bulk-price-child"
-                    type="number"
-                    placeholder="25"
-                    value={bulkPricePerChild}
-                    onChange={(e) => setBulkPricePerChild(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Leave empty to use property default</p>
-              </div>
-              <div>
-                <Label htmlFor="bulk-notes">Notes (Optional)</Label>
+                <Label htmlFor="bulk-notes">{t('pricing.customDatePricing.notesOptional')}</Label>
                 <Input
                   id="bulk-notes"
                   placeholder="Holiday pricing, etc."
@@ -396,7 +366,7 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
                   className="w-full"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {loading ? 'Saving...' : 'Apply to Selected Dates'}
+                  {loading ? t('pricing.customDatePricing.saving') : t('pricing.customDatePricing.applyToSelectedDates')}
                 </Button>
               </div>
             </div>
@@ -408,15 +378,15 @@ export function CustomPricingCalendar({ onPricingUpdate }: CustomPricingCalendar
           <div className="flex items-center space-x-4 text-sm text-gray-600">
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-green-50 border border-green-200 rounded"></div>
-              <span>Has custom pricing</span>
+              <span>{t('pricing.customDatePricing.hasCustomPricing')}</span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-4 h-4 bg-blue-50 border-2 border-blue-500 rounded"></div>
-              <span>Selected</span>
+              <span>{t('pricing.customDatePricing.selected')}</span>
             </div>
           </div>
           <div className="text-xs text-gray-500">
-            Custom pricing shows: Base price, A:Adult price, C:Child price (when different from property defaults)
+            Custom pricing shows: Base price per night
           </div>
         </div>
       </CardContent>

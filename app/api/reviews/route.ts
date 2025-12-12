@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { reviewStorage } from '@/lib/review-storage';
+import { reviewService } from '@/lib/review-service';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get approved reviews from storage
-    const approvedReviews = reviewStorage.getApprovedReviews();
+    // Get approved reviews from database
+    const approvedReviews = await reviewService.getApprovedReviews();
 
     return NextResponse.json({
       success: true,
@@ -51,27 +51,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In production, you would:
-    // 1. Connect to your database
-    // 2. Insert the new review (with approved: false for moderation)
-    // 3. Send notification email to admin
-    // 4. Optionally send confirmation email to reviewer
-
-    const newReview = {
-      id: Date.now().toString(),
+    // Create new review in database
+    const newReview = await reviewService.createReview({
       name: name.trim(),
       email: email.trim().toLowerCase(),
       rating: parseInt(rating),
       comment: comment.trim(),
-      stayDate: stayDate || null,
-      date: new Date().toISOString().split('T')[0],
-      approved: false // Reviews need admin approval
-    };
+      stay_date: stayDate || undefined
+    });
 
-    // Add to review storage (in production, save to database)
-    reviewStorage.addReview(newReview);
     console.log('New review submitted:', newReview);
-    console.log('Total reviews in storage:', reviewStorage.getAllReviews().length);
 
     return NextResponse.json({
       success: true,

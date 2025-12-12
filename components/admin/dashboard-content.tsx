@@ -23,15 +23,13 @@ interface DashboardContentProps {
   upcomingArrivals: any[]
   monthlyRevenue: { _sum: { total: number }, _count: number }
   totalUsers: number
-  recentActivity: any[]
 }
 
 export default function DashboardContent({
   pendingReservations,
   upcomingArrivals,
   monthlyRevenue,
-  totalUsers,
-  recentActivity
+  totalUsers
 }: DashboardContentProps) {
   const { t } = useTranslation('admin')
 
@@ -154,7 +152,6 @@ export default function DashboardContent({
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>{t('dashboard.upcomingArrivals.checkIn')} {format(new Date(reservation.check_in), 'MMM d, yyyy')}</span>
                       <span>{reservation.nights} {t('dashboard.upcomingArrivals.nights')}</span>
-                      <span>{reservation.adults} {t('dashboard.upcomingArrivals.adults')}, {reservation.children} {t('dashboard.upcomingArrivals.children')}</span>
                     </div>
                   </div>
                   <div className="text-right space-y-1">
@@ -233,51 +230,10 @@ export default function DashboardContent({
                 {t('dashboard.quickActions.systemManagement.reports')}
               </Button>
             </Link>
-            <Link href="/admin/audit" className="block">
-              <Button variant="outline" className="w-full justify-start">
-                {t('dashboard.quickActions.systemManagement.auditLogs')}
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('dashboard.recentActivity.title')}</CardTitle>
-          <CardDescription>{t('dashboard.recentActivity.description')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentActivity.slice(0, 8).map((log: any) => (
-              <div key={log.id} className="flex items-start gap-3 text-sm">
-                <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                <div className="flex-1">
-                  <p>
-                    <span className="font-medium">
-                      {log.users?.email || t('dashboard.recentActivity.system')}
-                    </span>
-                    {' '}
-                    <span className="text-muted-foreground">
-                      {log.action.toLowerCase().replace('_', ' ')}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(log.created_at), 'MMM d, h:mm a')}
-                  </p>
-                </div>
-              </div>
-            ))}
-            
-            <div className="text-center pt-4">
-              <Link href="/admin/audit">
-                <Button variant="outline" size="sm">{t('dashboard.recentActivity.viewAllActivity')}</Button>
-              </Link>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

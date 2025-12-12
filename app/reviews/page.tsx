@@ -1,13 +1,17 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { Star, User, Calendar, MessageSquare, Send, Shield } from 'lucide-react';
+import { Star, User, Calendar, MessageSquare, Send, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useTranslation } from '@/lib/use-translation';
 import { format } from 'date-fns';
+import { useSession } from 'next-auth/react';
+import { cn } from '@/lib/utils';
 
 interface Review {
   id: string;
@@ -20,108 +24,60 @@ interface Review {
   verified?: boolean;
 }
 
-interface BookingInfo {
-  id: string;
-  guestName: string;
-  checkIn: string;
-  checkOut: string;
-}
-
 export default function ReviewsPage() {
   const { t } = useTranslation('reviews');
+  const { data: session } = useSession();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [showVerificationForm, setShowVerificationForm] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verifiedBooking, setVerifiedBooking] = useState<BookingInfo | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     rating: 5,
     comment: '',
-    stayDate: '',
-    bookingReference: ''
+    stayDate: ''
   });
-  const [verificationData, setVerificationData] = useState({
-    bookingReference: '',
-    email: ''
-  });
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [submitMessage, setSubmitMessage] = useState('');
-  const [verificationMessage, setVerificationMessage] = useState('');
 
   useEffect(() => {
-    const fetchReviews = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/reviews');
-        const data = await response.json();
-        
-        if (data.success) {
-          setReviews(data.reviews);
+        // Fetch reviews
+        const reviewsResponse = await fetch('/api/reviews');
+        const reviewsData = await reviewsResponse.json();
+
+        if (reviewsData.success) {
+          setReviews(reviewsData.reviews);
         } else {
-          console.error('Failed to fetch reviews:', data.error);
+          console.error('Failed to fetch reviews:', reviewsData.error);
+        }
+
+        // Pre-populate form data for authenticated users
+        if (session?.user) {
+          setFormData(prev => ({
+            ...prev,
+            name: session.user.name || '',
+            email: session.user.email || ''
+          }));
         }
       } catch (error) {
-        console.error('Error fetching reviews:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchReviews();
-  }, []);
-
-  const handleVerificationInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVerificationData({
-      ...verificationData,
-      [e.target.name]: e.target.value
-    });
-  };
+    fetchData();
+  }, [session]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
-  };
-
-  const verifyBooking = async () => {
-    setIsVerifying(true);
-    setVerificationMessage('');
-
-    try {
-      const response = await fetch('/api/verify-booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(verificationData),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setVerifiedBooking(data.booking);
-        setFormData(prev => ({
-          ...prev,
-          name: data.booking.guestName,
-          email: verificationData.email,
-          bookingReference: data.booking.id,
-          stayDate: data.booking.checkOut
-        }));
-        setShowVerificationForm(false);
-        setShowReviewForm(true);
-        setVerificationMessage('');
-      } else {
-        setVerificationMessage(data.error);
-      }
-    } catch (error) {
-      setVerificationMessage('Failed to verify booking. Please try again.');
-    } finally {
-      setIsVerifying(false);
-    }
   };
 
   const handleRatingChange = (rating: number) => {
@@ -137,24 +93,30 @@ export default function ReviewsPage() {
     setSubmitMessage('');
 
     try {
+      const reviewData = {
+        ...formData,
+        stayDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''
+      };
+
       const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(reviewData),
       });
 
       const data = await response.json();
 
       if (data.success) {
         setFormData({
-          name: '',
-          email: '',
+          name: session?.user?.name || '',
+          email: session?.user?.email || '',
           rating: 5,
           comment: '',
           stayDate: ''
         });
+        setSelectedDate(undefined);
         setShowReviewForm(false);
         setSubmitMessage(t('form.successMessage'));
         // Note: New reviews won't appear immediately as they need approval
@@ -197,28 +159,24 @@ export default function ReviewsPage() {
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             {t('header.subtitle')}
           </p>
-          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 mt-4">
-            <Shield className="w-4 h-4 text-green-600" />
-            <span>{t('header.verifiedOnly')}</span>
-          </div>
         </div>
 
         {/* Overall Rating Summary */}
-        <Card className="p-6 mb-8">
-          <div className="flex items-center justify-between">
+        <Card className="p-4 sm:p-6 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-4 mb-2">
-                <div className="text-3xl font-bold text-gray-900">
+              <div className="flex items-center gap-2 sm:gap-4 mb-2 flex-wrap">
+                <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                   {averageRating.toFixed(1)}
                 </div>
                 {renderStars(Math.round(averageRating))}
-                <span className="text-gray-600">({reviews.length} {t('summary.reviewsCount')})</span>
+                <span className="text-sm sm:text-base text-gray-600">({reviews.length} {t('summary.reviewsCount')})</span>
               </div>
-              <p className="text-gray-600">{t('summary.overallRating')}</p>
+              <p className="text-sm sm:text-base text-gray-600">{t('summary.overallRating')}</p>
             </div>
-            <Button 
-              onClick={() => setShowVerificationForm(true)}
-              className="bg-coral hover:bg-coral/90 text-white"
+            <Button
+              onClick={() => setShowReviewForm(true)}
+              className="bg-coral hover:bg-coral/90 text-white w-full sm:w-auto flex-shrink-0"
             >
               <MessageSquare className="w-4 h-4 mr-2" />
               {t('buttons.writeReview')}
@@ -226,84 +184,10 @@ export default function ReviewsPage() {
           </div>
         </Card>
 
-        {/* Booking Verification Modal */}
-        {showVerificationForm && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <Card className="p-6 max-w-lg w-full">
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{t('verification.title')}</h3>
-                <p className="text-gray-600">{t('verification.subtitle')}</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('verification.bookingReference')} *
-                  </label>
-                  <Input
-                    name="bookingReference"
-                    type="text"
-                    required
-                    value={verificationData.bookingReference}
-                    onChange={handleVerificationInputChange}
-                    placeholder="JOURY-2024-XXX"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('verification.email')} *
-                  </label>
-                  <Input
-                    name="email"
-                    type="email"
-                    required
-                    value={verificationData.email}
-                    onChange={handleVerificationInputChange}
-                    placeholder="your@email.com"
-                  />
-                </div>
-
-                {verificationMessage && (
-                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
-                    {verificationMessage}
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <Button
-                    onClick={verifyBooking}
-                    disabled={isVerifying || !verificationData.bookingReference || !verificationData.email}
-                    className="flex-1 bg-coral hover:bg-coral/90"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        {t('verification.verifying')}
-                      </>
-                    ) : (
-                      t('verification.verify')
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => setShowVerificationForm(false)}
-                    variant="outline"
-                  >
-                    {t('buttons.cancel')}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
-
         {/* Review Form */}
-        {showReviewForm && verifiedBooking && (
-          <Card className="p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">{t('form.title')}</h2>
+        {showReviewForm && (
+          <Card className="p-4 sm:p-6 mb-8">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">{t('form.title')}</h2>
             <form onSubmit={handleSubmitReview} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -333,17 +217,33 @@ export default function ReviewsPage() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('form.stayDate')}
                 </label>
-                <Input
-                  name="stayDate"
-                  type="date"
-                  value={formData.stayDate}
-                  onChange={handleInputChange}
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick your stay date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div>
@@ -370,19 +270,19 @@ export default function ReviewsPage() {
 
               {submitMessage && (
                 <div className={`p-3 rounded-lg text-sm ${
-                  submitMessage.includes('success') || submitMessage.includes('نجح') 
-                    ? 'bg-green-50 text-green-800 border border-green-200' 
+                  submitMessage.includes('success') || submitMessage.includes('نجح')
+                    ? 'bg-green-50 text-green-800 border border-green-200'
                     : 'bg-red-50 text-red-800 border border-red-200'
                 }`}>
                   {submitMessage}
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   type="submit"
                   disabled={isSubmitting || !formData.name || !formData.email || !formData.comment}
-                  className="bg-coral hover:bg-coral/90 text-white"
+                  className="bg-coral hover:bg-coral/90 text-white w-full sm:w-auto"
                 >
                   {isSubmitting ? (
                     <>
@@ -400,6 +300,7 @@ export default function ReviewsPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setShowReviewForm(false)}
+                  className="w-full sm:w-auto"
                 >
                   {t('buttons.cancel')}
                 </Button>
@@ -411,7 +312,7 @@ export default function ReviewsPage() {
         {/* Reviews List */}
         <div className="space-y-6">
           <h2 className="text-2xl font-bold text-gray-900">{t('reviews.title')}</h2>
-          
+
           {isLoading ? (
             <div className="grid gap-6">
               {[1, 2, 3].map((i) => (
@@ -438,7 +339,7 @@ export default function ReviewsPage() {
               <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('reviews.noReviews')}</h3>
               <p className="text-gray-600 mb-4">{t('reviews.beFirst')}</p>
-              <Button 
+              <Button
                 onClick={() => setShowReviewForm(true)}
                 className="bg-coral hover:bg-coral/90 text-white"
               >
@@ -458,10 +359,6 @@ export default function ReviewsPage() {
                         <div className="flex items-center gap-3">
                           <h3 className="font-semibold text-gray-900">{review.name}</h3>
                           {renderStars(review.rating)}
-                        </div>
-                        <div className="text-sm text-gray-500 flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {format(new Date(review.date), 'MMM d, yyyy')}
                         </div>
                       </div>
                       {review.stayDate && (

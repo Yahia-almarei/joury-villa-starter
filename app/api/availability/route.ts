@@ -61,7 +61,7 @@ async function handleAvailability(request: NextRequest, data: AvailabilityData) 
       .eq('property_id', propertyId)
       .in('status', ['PENDING', 'AWAITING_APPROVAL', 'APPROVED', 'PAID'])
       .or(
-        `and(check_in.lte.${monthEnd.toISOString()},check_out.gte.${monthStart.toISOString()})`
+        `and(check_in.lt.${monthEnd.toISOString()},check_out.gt.${monthStart.toISOString()})`
       )
 
     // Filter out expired PENDING reservations
@@ -131,26 +131,10 @@ async function handleAvailability(request: NextRequest, data: AvailabilityData) 
     // Get property details for pricing and rules
     const { data: property } = await supabase
       .from('properties')
-      .select(`
-        *,
-        seasons(
-          id,
-          name,
-          start_date,
-          end_date,
-          price_per_night_override
-        )
-      `)
+      .select('*')
       .eq('id', propertyId)
       .single()
 
-    // Filter seasons to only include those overlapping with our date range
-    if (property?.seasons) {
-      property.seasons = property.seasons.filter((season: any) => 
-        new Date(season.start_date) <= monthEnd && 
-        new Date(season.end_date) >= monthStart
-      )
-    }
 
     if (property) {
       // Get custom pricing for this month
@@ -178,20 +162,15 @@ async function handleAvailability(request: NextRequest, data: AvailabilityData) 
           if (customPricing) {
             basePrice = customPricing.price_per_night
           } else {
-            // Find applicable season
-            const season = property.seasons?.find((s: any) => 
-              day >= new Date(s.start_date) && day <= new Date(s.end_date)
-            )
-            
             // Determine if this is a weekday or weekend (Thu, Fri, Sat = weekend)
             const dayOfWeek = day.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
             const isWeekend = dayOfWeek === 4 || dayOfWeek === 5 || dayOfWeek === 6; // Thu, Fri, Sat
-            
-            // Use temporary storage in existing fields until migration
-            const weekdayPrice = property.base_price_night ?? 500;
-            const weekendPrice = property.price_per_adult ?? Math.round((property.base_price_night ?? 500) * 1.2);
-            
-            basePrice = season?.price_per_night_override ?? (isWeekend ? weekendPrice : weekdayPrice)
+
+            // Use correct pricing fields
+            const weekdayPrice = property.weekday_price_night ?? 500;
+            const weekendPrice = property.weekend_price_night ?? Math.round((property.weekday_price_night ?? 500) * 1.2);
+
+            basePrice = isWeekend ? weekendPrice : weekdayPrice;
           }
           
           availability[dateKey] = {
@@ -200,6 +179,7 @@ async function handleAvailability(request: NextRequest, data: AvailabilityData) 
             minStay: property.min_nights,
             hasCustomPricing: !!customPricing
           }
+
         }
       }
     }

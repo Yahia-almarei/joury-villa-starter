@@ -7,6 +7,7 @@ const createCouponSchema = z.object({
   discount_type: z.enum(["percentage", "amount"]),
   percent_off: z.number().optional(),
   amount_off: z.number().optional(),
+  max_uses: z.number().optional(),
   valid_from: z.string().nullable().optional(),
   valid_to: z.string().nullable().optional(),
   min_nights: z.number().nullable().optional(),
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const { data: coupons, error } = await supabase
       .from('coupons')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('valid_from', { ascending: false })
 
     if (error) {
       console.error('Error fetching coupons:', error)
@@ -35,9 +36,19 @@ export async function GET(request: NextRequest) {
       }, { status: 500 })
     }
 
+
+    // Transform coupons to match frontend expectations
+    const transformedCoupons = (coupons || []).map(coupon => ({
+      ...coupon,
+      // Map database fields to frontend fields
+      percent_off: coupon.discount_type === 'PERCENTAGE' ? coupon.discount_value : null,
+      amount_off: coupon.discount_type === 'FIXED_AMOUNT' ? coupon.discount_value : null,
+      valid_to: coupon.valid_until // Map valid_until to valid_to
+    }))
+
     return NextResponse.json({
       success: true,
-      coupons: coupons || []
+      coupons: transformedCoupons
     })
 
   } catch (error) {
@@ -56,23 +67,18 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServerClient()
 
-    // Prepare coupon data
+    // Prepare coupon data to match actual database schema
     const couponData: any = {
       code: validatedData.code.toUpperCase(),
-      valid_from: validatedData.valid_from || null,
-      valid_to: validatedData.valid_to || null,
+      discount_type: validatedData.discount_type === 'percentage' ? 'PERCENTAGE' : 'FIXED_AMOUNT',
+      discount_value: validatedData.discount_type === 'percentage' ? validatedData.percent_off : validatedData.amount_off,
+      max_uses: validatedData.max_uses || 1,
+      used_count: 0,
+      valid_from: validatedData.valid_from,
+      valid_until: validatedData.valid_to,
       min_nights: validatedData.min_nights || null,
       is_active: validatedData.is_active,
-      is_public: validatedData.is_public,
-    }
-
-    // Set discount fields based on type
-    if (validatedData.discount_type === 'percentage') {
-      couponData.percent_off = validatedData.percent_off || null
-      couponData.amount_off = null
-    } else {
-      couponData.amount_off = validatedData.amount_off || null
-      couponData.percent_off = null
+      is_public: validatedData.is_public
     }
 
     // Create coupon using service role
@@ -134,23 +140,17 @@ export async function PUT(request: NextRequest) {
 
     // Prepare coupon data (excluding id)
     const { id, ...couponData } = validatedData
-    
+
     const updateData: any = {
       code: couponData.code.toUpperCase(),
-      valid_from: couponData.valid_from || null,
-      valid_to: couponData.valid_to || null,
+      discount_type: couponData.discount_type === 'percentage' ? 'PERCENTAGE' : 'FIXED_AMOUNT',
+      discount_value: couponData.discount_type === 'percentage' ? couponData.percent_off : couponData.amount_off,
+      max_uses: couponData.max_uses || 1,
+      valid_from: couponData.valid_from,
+      valid_until: couponData.valid_to,
       min_nights: couponData.min_nights || null,
       is_active: couponData.is_active,
       is_public: couponData.is_public,
-    }
-
-    // Set discount fields based on type
-    if (couponData.discount_type === 'percentage') {
-      updateData.percent_off = couponData.percent_off || null
-      updateData.amount_off = null
-    } else {
-      updateData.amount_off = couponData.amount_off || null
-      updateData.percent_off = null
     }
 
     // Update coupon using service role

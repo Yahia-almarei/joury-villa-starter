@@ -43,11 +43,6 @@ export type QuoteResult = {
     basePrice: number;
     weekdayNights: number;
     weekendNights: number;
-    seasonalAdjustments: Array<{
-      date: string;
-      seasonName: string;
-      adjustment: number;
-    }>;
     customPriceAdjustments?: Array<{
       date: string;
       customPricePerNight: number;
@@ -89,16 +84,7 @@ export async function quote(input: QuoteInput): Promise<QuoteResult> {
     if (input.propertyId && input.propertyId !== "joury-villa") {
       const { data } = await supabase
         .from('properties')
-        .select(`
-          *,
-          seasons(
-            id,
-            name,
-            start_date,
-            end_date,
-            price_per_night_override
-          )
-        `)
+        .select('*')
         .eq('id', input.propertyId)
         .single();
       property = data;
@@ -108,28 +94,12 @@ export async function quote(input: QuoteInput): Promise<QuoteResult> {
       // Get the first available property
       const { data } = await supabase
         .from('properties')
-        .select(`
-          *,
-          seasons(
-            id,
-            name,
-            start_date,
-            end_date,
-            price_per_night_override
-          )
-        `)
+        .select('*')
         .limit(1)
         .single();
       property = data;
     }
 
-    // Filter seasons to only include those overlapping with our date range
-    if (property?.seasons) {
-      property.seasons = property.seasons.filter((season: any) => 
-        new Date(season.start_date) <= checkOutDate && 
-        new Date(season.end_date) >= checkInDate
-      );
-    }
 
     if (!property) {
       return { success: false, error: "Property not found" };
@@ -192,7 +162,6 @@ export async function quote(input: QuoteInput): Promise<QuoteResult> {
 
     // Calculate pricing for each night
     const dailyRates = [];
-    const seasonalAdjustments = [];
     const customPriceAdjustments = [];
     let totalNightlyAmount = 0;
 
@@ -203,7 +172,6 @@ export async function quote(input: QuoteInput): Promise<QuoteResult> {
       const customPricing = customPricingMap.get(dateStr);
       
       let baseRate;
-      let season = null;
       
       if (customPricing) {
         baseRate = customPricing.pricePerNight;
@@ -211,32 +179,19 @@ export async function quote(input: QuoteInput): Promise<QuoteResult> {
         customPriceAdjustments.push({
           date: dateStr,
           customPricePerNight: customPricing.pricePerNight,
-          originalWeekdayPrice: property.weekday_price_night ?? property.base_price_night ?? 500,
-          originalWeekendPrice: property.weekend_price_night ?? property.price_per_adult ?? Math.round((property.base_price_night ?? 500) * 1.2)
+          originalWeekdayPrice: property.weekday_price_night ?? 500,
+          originalWeekendPrice: property.weekend_price_night ?? Math.round((property.weekday_price_night ?? 500) * 1.2)
         });
       } else {
-        // Find applicable season for this date
-        season = property.seasons?.find((s: any) => 
-          isWithinInterval(day, { start: new Date(s.start_date), end: new Date(s.end_date) })
-        );
-        
         // Determine if this is a weekday or weekend (Thu, Fri, Sat = weekend)
         const dayOfWeek = day.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
         const isWeekend = dayOfWeek === 4 || dayOfWeek === 5 || dayOfWeek === 6; // Thu, Fri, Sat
-        
-        // Use temporary storage in existing fields until migration
-        const weekdayPrice = property.base_price_night ?? 500;
-        const weekendPrice = property.price_per_adult ?? Math.round((property.base_price_night ?? 500) * 1.2);
-        
-        baseRate = season?.price_per_night_override ?? (isWeekend ? weekendPrice : weekdayPrice);
-        
-        if (season) {
-          seasonalAdjustments.push({
-            date: format(day, 'yyyy-MM-dd'),
-            seasonName: season.name,
-            adjustment: (season.price_per_night_override ?? 0) - (isWeekend ? weekendPrice : weekdayPrice)
-          });
-        }
+
+        // Use correct pricing fields
+        const weekdayPrice = property.weekday_price_night ?? 500;
+        const weekendPrice = property.weekend_price_night ?? Math.round((property.weekday_price_night ?? 500) * 1.2);
+
+        baseRate = isWeekend ? weekendPrice : weekdayPrice;
       }
       
       const dailyTotal = baseRate; // No adult/child supplements
@@ -244,8 +199,7 @@ export async function quote(input: QuoteInput): Promise<QuoteResult> {
       dailyRates.push({
         date: day,
         baseRate,
-        total: dailyTotal,
-        season: season?.name
+        total: dailyTotal
       });
       
       totalNightlyAmount += dailyTotal;
@@ -383,9 +337,6 @@ export async function quote(input: QuoteInput): Promise<QuoteResult> {
           const dayOfWeek = day.date.getDay();
           return dayOfWeek === 4 || dayOfWeek === 5 || dayOfWeek === 6;
         }).length,
-        seasonalAdjustments: seasonalAdjustments.filter((adj, index, self) => 
-          self.findIndex(a => a.seasonName === adj.seasonName) === index
-        ),
         customPriceAdjustments
       }
     };
@@ -406,15 +357,13 @@ export async function checkAvailability(
   checkOut: Date
 ): Promise<{ available: boolean; reason?: string }> {
   try {
-    // Check blocked periods
+    // Check blocked periods - fix date range overlap logic to prevent false positives
     const { data: blockedPeriods } = await supabase
       .from('blocked_periods')
       .select('*')
       .eq('property_id', propertyId)
       .or(
-        `and(start_date.lte.${checkIn.toISOString()},end_date.gt.${checkIn.toISOString()}),` +
-        `and(start_date.lt.${checkOut.toISOString()},end_date.gte.${checkOut.toISOString()}),` +
-        `and(start_date.gte.${checkIn.toISOString()},end_date.lte.${checkOut.toISOString()})`
+        `and(start_date.lt.${checkOut.toISOString()},end_date.gt.${checkIn.toISOString()})`
       );
 
     if (blockedPeriods && blockedPeriods.length > 0) {
@@ -425,16 +374,17 @@ export async function checkAvailability(
     }
 
     // Check existing reservations (active statuses only)
+    // Fix: Use date-only strings instead of full ISO timestamps to avoid timezone conflicts
+    // A checkout on date X should not conflict with check-in on the same date X
+    const checkOutDate = format(checkOut, 'yyyy-MM-dd');
+    const checkInDate = format(checkIn, 'yyyy-MM-dd');
+
     const { data: conflictingReservations } = await supabase
       .from('reservations')
       .select('*')
       .eq('property_id', propertyId)
       .in('status', ['PENDING', 'AWAITING_APPROVAL', 'APPROVED', 'PAID'])
-      .or(
-        `and(check_in.lte.${checkIn.toISOString()},check_out.gt.${checkIn.toISOString()}),` +
-        `and(check_in.lt.${checkOut.toISOString()},check_out.gte.${checkOut.toISOString()}),` +
-        `and(check_in.gte.${checkIn.toISOString()},check_out.lte.${checkOut.toISOString()})`
-      );
+      .or(`and(check_in.lt.${checkOutDate},check_out.gt.${checkInDate})`);
 
     // Check if any PENDING reservations have expired holds
     const now = new Date();
@@ -515,18 +465,12 @@ export async function createHold(
       .from('reservations')
       .insert({
         property_id: actualPropertyId,
-        user_id: actualUserId, // Use anonymous user for guest bookings
-        check_in: checkIn.toISOString(),
-        check_out: checkOut.toISOString(),
-        nights,
-        adults: 2, // Fixed default adult count
-        children: 0, // Fixed default children count
-        subtotal: total, // Simplified for hold
-        fees: 0,
-        taxes: 0,
-        total,
+        user_id: actualUserId,
+        check_in: checkIn.toISOString().split('T')[0],
+        check_out: checkOut.toISOString().split('T')[0],
+        nights: nights,
+        total: total,
         status: 'PENDING',
-        hold_expires_at: holdExpiresAt.toISOString(),
       })
       .select()
       .single();

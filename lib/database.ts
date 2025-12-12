@@ -120,6 +120,7 @@ export class DatabaseAdapter {
     return data
   }
 
+
   async createProperty(propertyData: Database['public']['Tables']['properties']['Insert']) {
     const { data, error } = await this.supabase
       .from('properties')
@@ -161,7 +162,7 @@ export class DatabaseAdapter {
       query = query.in('status', status)
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false })
+    const { data, error } = await query
 
     if (error) throw error
     return data || []
@@ -176,8 +177,7 @@ export class DatabaseAdapter {
         users!inner (
           *,
           customer_profiles (*)
-        ),
-        payments (*)
+        )
       `)
       .eq('id', id)
       .single()
@@ -197,8 +197,7 @@ export class DatabaseAdapter {
           customer_profiles (*)
         )
       `)
-      .order('created_at', { ascending: false })
-
+      
     // Only filter by status if not 'ALL'
     if (status && status !== 'ALL') {
       query = query.eq('status', status)
@@ -209,6 +208,27 @@ export class DatabaseAdapter {
     }
 
     const { data, error } = await query
+
+    if (error) throw error
+    return data || []
+  }
+
+  async getReservationsByDateRange(startDate: string, endDate: string) {
+    const { data, error } = await this.supabase
+      .from('reservations')
+      .select(`
+        *,
+        users!inner (
+          id,
+          email,
+          customer_profiles (
+            full_name,
+            phone
+          )
+        )
+      `)
+      .or(`check_in.lte.${endDate},check_out.gte.${startDate}`)
+      .order('check_in', { ascending: true })
 
     if (error) throw error
     return data || []
@@ -267,24 +287,18 @@ export class DatabaseAdapter {
     return data || []
   }
 
-  async findSeasons(propertyId: string, startDate: string, endDate: string) {
-    const { data, error } = await this.supabase
-      .from('seasons')
-      .select('*')
-      .eq('property_id', propertyId)
-      .or(`start_date.lte.${endDate},end_date.gte.${startDate}`)
-
-    if (error) throw error
-    return data || []
-  }
 
   async checkAvailability(checkIn: string, checkOut: string, excludeReservationId?: string) {
+    console.log('🔍 checkAvailability called with:', { checkIn, checkOut, excludeReservationId })
+
     // Check for overlapping reservations
+    // Correct overlap logic: (start1 < end2 AND end1 > start2)
     let query = this.supabase
       .from('reservations')
-      .select('id')
+      .select('*')
       .not('status', 'eq', 'CANCELLED')
-      .or(`check_in.lt.${checkOut},check_out.gt.${checkIn}`)
+      .lt('check_in', checkOut)
+      .gt('check_out', checkIn)
 
     // Exclude specific reservation if provided (for rescheduling)
     if (excludeReservationId) {
@@ -295,6 +309,8 @@ export class DatabaseAdapter {
 
     if (reservationError) throw reservationError
 
+    console.log('🔍 Found overlapping reservations:', overlappingReservations)
+
     // If there are overlapping reservations, dates are not available
     if (overlappingReservations && overlappingReservations.length > 0) {
       return false
@@ -303,16 +319,20 @@ export class DatabaseAdapter {
     // Check for blocked periods
     const { data: blockedPeriods, error: blockedError } = await this.supabase
       .from('blocked_periods')
-      .select('id')
-      .or(`start_date.lt.${checkOut},end_date.gt.${checkIn}`)
+      .select('*')
+      .lt('start_date', checkOut)
+      .gt('end_date', checkIn)
 
     if (blockedError) throw blockedError
+
+    console.log('🔍 Found overlapping blocked periods:', blockedPeriods)
 
     // If there are overlapping blocked periods, dates are not available
     if (blockedPeriods && blockedPeriods.length > 0) {
       return false
     }
 
+    console.log('✅ Dates are available')
     return true
   }
 
@@ -455,8 +475,7 @@ export class DatabaseAdapter {
           customer_profiles (*)
         )
       `)
-      .order('created_at', { ascending: false })
-      .limit(limit)
+            .limit(limit)
 
     if (error) throw error
     return data || []
@@ -523,8 +542,7 @@ export class DatabaseAdapter {
       .insert({
         property_id: propertyId,
         start_date: startDate,
-        end_date: endDate,
-        reason: reason || 'Administrative block'
+        end_date: endDate
       })
       .select()
       .single()
@@ -537,6 +555,22 @@ export class DatabaseAdapter {
     let query = this.supabase
       .from('blocked_periods')
       .select('*')
+      .order('start_date', { ascending: true })
+
+    if (propertyId) {
+      query = query.eq('property_id', propertyId)
+    }
+
+    const { data, error } = await query
+    if (error) throw error
+    return data || []
+  }
+
+  async getBlockedPeriodsByDateRange(startDate: string, endDate: string, propertyId?: string) {
+    let query = this.supabase
+      .from('blocked_periods')
+      .select('*')
+      .or(`start_date.lte.${endDate},end_date.gte.${startDate}`)
       .order('start_date', { ascending: true })
 
     if (propertyId) {
@@ -563,8 +597,6 @@ export class DatabaseAdapter {
     property_id: string
     date: string
     price_per_night: number
-    price_per_adult?: number
-    price_per_child?: number
     notes?: string
   }) {
     try {
@@ -575,8 +607,6 @@ export class DatabaseAdapter {
           property_id: pricingData.property_id,
           date: pricingData.date,
           price_per_night: pricingData.price_per_night,
-          price_per_adult: pricingData.price_per_adult || null,
-          price_per_child: pricingData.price_per_child || null,
           notes: pricingData.notes || null
         }, { onConflict: 'property_id,date' })
         .select()
@@ -600,10 +630,7 @@ export class DatabaseAdapter {
       
       customPricing[pricingData.date] = {
         price_per_night: pricingData.price_per_night,
-        price_per_adult: pricingData.price_per_adult || null,
-        price_per_child: pricingData.price_per_child || null,
         notes: pricingData.notes || null,
-        created_at: new Date().toISOString()
       }
       
       await this.saveCustomPricingForProperty(pricingData.property_id, customPricing)
@@ -611,7 +638,6 @@ export class DatabaseAdapter {
       return {
         id: `${pricingData.property_id}-${pricingData.date}`,
         ...pricingData,
-        created_at: new Date().toISOString()
       }
     } catch (error) {
       throw error
@@ -685,10 +711,7 @@ export class DatabaseAdapter {
             property_id: propertyId,
             date: dateStr,
             price_per_night: pricing.price_per_night,
-            price_per_adult: pricing.price_per_adult,
-            price_per_child: pricing.price_per_child,
             notes: pricing.notes,
-            created_at: pricing.created_at || new Date().toISOString()
           })
         }
       }
@@ -703,8 +726,6 @@ export class DatabaseAdapter {
 
   async updateCustomPricing(id: string, pricingData: {
     price_per_night?: number
-    price_per_adult?: number
-    price_per_child?: number
     notes?: string
   }) {
     try {
@@ -715,7 +736,7 @@ export class DatabaseAdapter {
       
       if (customPricing[date]) {
         // Update existing pricing
-        Object.assign(customPricing[date], pricingData, { updated_at: new Date().toISOString() })
+        Object.assign(customPricing[date], pricingData)
         await this.saveCustomPricingForProperty(propertyId, customPricing)
         
         return {
@@ -734,22 +755,31 @@ export class DatabaseAdapter {
 
   async deleteCustomPricing(id: string) {
     try {
-      // Parse property_id and date from id (format: propertyId-YYYY-MM-DD)
-      // Find the last occurrence of a date pattern (YYYY-MM-DD)
+      // First try to delete by UUID (new approach)
+      const { error } = await this.supabase
+        .from('custom_pricing')
+        .delete()
+        .eq('id', id)
+
+      if (!error) {
+        return true
+      }
+
+      // If that fails, try the legacy approach (propertyId-date format)
       const dateMatch = id.match(/-(\d{4}-\d{2}-\d{2})$/)
       if (!dateMatch) {
         throw new Error(`Invalid custom pricing ID format: ${id}`)
       }
-      
+
       const date = dateMatch[1]
       const propertyId = id.replace(`-${date}`, '')
       const customPricing = await this.getCustomPricingForProperty(propertyId)
-      
+
       if (customPricing[date]) {
         delete customPricing[date]
         await this.saveCustomPricingForProperty(propertyId, customPricing)
       }
-      
+
       return true
     } catch (error) {
       throw error
@@ -766,43 +796,180 @@ export class DatabaseAdapter {
   }>) {
     try {
       const results = []
-      
+
       // Group by property_id to optimize updates
       const entriesByProperty = new Map<string, typeof pricingEntries>()
-      
+
       for (const entry of pricingEntries) {
         if (!entriesByProperty.has(entry.property_id)) {
           entriesByProperty.set(entry.property_id, [])
         }
         entriesByProperty.get(entry.property_id)!.push(entry)
       }
-      
+
       // Process each property
       for (const [propertyId, entries] of entriesByProperty) {
         const customPricing = await this.getCustomPricingForProperty(propertyId)
-        
+
         for (const entry of entries) {
           customPricing[entry.date] = {
             price_per_night: entry.price_per_night,
             price_per_adult: entry.price_per_adult || null,
             price_per_child: entry.price_per_child || null,
             notes: entry.notes || null,
-            created_at: new Date().toISOString()
-          }
-          
+              }
+
           results.push({
             id: `${propertyId}-${entry.date}`,
             ...entry,
-            created_at: new Date().toISOString()
-          })
+              })
         }
-        
+
         await this.saveCustomPricingForProperty(propertyId, customPricing)
       }
-      
+
       return results
     } catch (error) {
       throw error
+    }
+  }
+
+  // Review operations
+  async getAllReviews() {
+    const { data, error } = await this.supabase
+      .from('reviews')
+      .select('*')
+
+    if (error) throw error
+    return data || []
+  }
+
+  async getApprovedReviews() {
+    const { data, error } = await this.supabase
+      .from('reviews')
+      .select('id, name, rating, comment, stay_date')
+      .eq('approved', true)
+
+    if (error) throw error
+    return data || []
+  }
+
+  async getPendingReviews() {
+    const { data, error } = await this.supabase
+      .from('reviews')
+      .select('*')
+      .eq('approved', false)
+
+    if (error) throw error
+    return data || []
+  }
+
+  async createReview(reviewData: {
+    name: string
+    email: string
+    rating: number
+    comment: string
+    stay_date?: string
+  }) {
+    const { data, error } = await this.supabase
+      .from('reviews')
+      .insert({
+        name: reviewData.name,
+        email: reviewData.email,
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+        stay_date: reviewData.stay_date || null,
+        approved: false
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  async updateReview(id: string, updateData: {
+    name?: string
+    rating?: number
+    comment?: string
+    stay_date?: string
+  }) {
+    const { data, error } = await this.supabase
+      .from('reviews')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  async approveReview(id: string) {
+    const { data, error } = await this.supabase
+      .from('reviews')
+      .update({ approved: true })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  async deleteReview(id: string) {
+    const { error } = await this.supabase
+      .from('reviews')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+  }
+
+  async getReviewById(id: string) {
+    const { data, error } = await this.supabase
+      .from('reviews')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  }
+
+  async getReviewStats() {
+    const { data: allReviews, error: allError } = await this.supabase
+      .from('reviews')
+      .select('rating')
+
+    if (allError) throw allError
+
+    const { data: approvedReviews, error: approvedError } = await this.supabase
+      .from('reviews')
+      .select('rating')
+      .eq('approved', true)
+
+    if (approvedError) throw approvedError
+
+    const { data: pendingReviews, error: pendingError } = await this.supabase
+      .from('reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('approved', false)
+
+    if (pendingError) throw pendingError
+
+    const total = allReviews?.length || 0
+    const approved = approvedReviews?.length || 0
+    const pending = pendingReviews?.length || 0
+    const averageRating = approved > 0
+      ? approvedReviews!.reduce((sum, review) => sum + review.rating, 0) / approved
+      : 0
+
+    return {
+      total,
+      approved,
+      pending,
+      averageRating
     }
   }
 

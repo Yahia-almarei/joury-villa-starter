@@ -25,19 +25,14 @@ export function AdminHeader() {
   const handleSignOut = async () => {
     setLoading(true)
     try {
-      // Sign out without redirect first
-      await signOut({ redirect: false })
-      // Then manually redirect and refresh to clear session
-      router.push('/')
-      router.refresh()
-      // Force a full page reload to clear any cached auth state
+      // Clear the session using custom endpoint
+      await fetch('/api/signout', { method: 'POST' })
+      // Force redirect to home page
       window.location.href = '/'
     } catch (error) {
       console.error('Sign out error:', error)
-      // Fallback: force redirect to home page
+      // Fallback: force redirect anyway
       window.location.href = '/'
-    } finally {
-      setLoading(false)
     }
   }
   

@@ -1,0 +1,146 @@
+{
+  "hero": {
+    "alt": "Joury Villa",
+    "viewPictures": "VIEW MORE PICTURES"
+  },
+  "navigation": {
+    "description": "Description",
+    "pictures": "Pictures", 
+    "amenities": "Amenities"
+  },
+  "title": "Joury Villa",
+  "stats": {
+    "guests": "10 - 14 Guests",
+    "bedrooms": "4 Bedrooms", 
+    "bathrooms": "3 Bathrooms"
+  },
+  "description": {
+    "paragraph1": "Experience luxury and comfort at Joury Villa, nestled in the historic city of Jericho. This stunning 4-bedroom retreat combines modern amenities with authentic Palestinian hospitality, offering you an unforgettable stay in one of the world's oldest cities.",
+    "paragraph2": "The villa features spacious accommodations for up to 14 guests, with elegantly furnished bedrooms, multiple living areas, and a fully equipped kitchen perfect for preparing meals with local ingredients. Step outside to discover your private oasis - a sparkling swimming pool surrounded by lush gardens and comfortable seating areas.",
+    "paragraph3": "Located just minutes from Jericho's main attractions, including ancient archaeological sites, traditional markets, and the famous Mount of Temptation, Joury Villa serves as your perfect base for exploring the rich history and culture of Palestine while enjoying modern comforts and amenities."
+  },
+  "pictures": {
+    "title": "Pictures",
+    "exploreAll": "Explore all pictures",
+    "gallery": {
+      "exterior": "Villa exterior",
+      "livingRoom": "Living room", 
+      "poolArea": "Pool area",
+      "bedroom": "Bedroom",
+      "kitchen": "Kitchen",
+      "gardenView": "Garden view"
+    }
+  },
+  "sleeping": {
+    "title": "Sleeping Arrangements",
+    "kingBeds": "3 King-size beds",
+    "twinBed": "2 Twin-size beds",
+    "mattresses": "4 Mattresses"
+  },
+  "amenities": {
+    "title": "Amenities",
+    "commonSpace": {
+      "title": "Common space & Essentials",
+      "wifi": {
+        "title": "Wi-Fi",
+        "description": "High-speed"
+      },
+      "parking": {
+        "title": "Parking", 
+        "description": "Free secure"
+      },
+      "climate": {
+        "title": "AC/Heat",
+        "description": "Climate control"
+      },
+      "tv": {
+        "title": "Smart TV",
+        "description": "Streaming"
+      }
+    },
+    "bedroom": {
+      "title": "Bedroom",
+      "kingBeds": {
+        "title": "3 King Beds",
+        "description": "Comfortable"
+      },
+      "twinBed": {
+        "title": "2 Twin Beds", 
+        "description": "Extra guests"
+      },
+      "linens": {
+        "title": "Fresh Linens",
+        "description": "Premium quality"
+      },
+      "pillows": {
+        "title": "Extra Pillows",
+        "description": "& blankets"
+      }
+    },
+    "bathroom": {
+      "title": "Bathroom",
+      "shower": {
+        "title": "Rain Shower",
+        "description": "Luxury"
+      },
+      "towels": {
+        "title": "Fresh Towels",
+        "description": "Premium cotton"
+      },
+      "washer": {
+        "title": "Washer/Dryer",
+        "description": "In-unit"
+      }
+    },
+    "kitchen": {
+      "title": "Kitchen",
+      "fullKitchen": {
+        "title": "Full Kitchen",
+        "description": "Equipped"
+      },
+      "refrigerator": {
+        "title": "Refrigerator",
+        "description": "Large fridge"
+      },
+      "microwave": {
+        "title": "Microwave", 
+        "description": "Quick heat"
+      },
+      "coffeeMaker": {
+        "title": "Coffee Maker",
+        "description": "Fresh coffee"
+      },
+      "dishwasher": {
+        "title": "Dishwasher",
+        "description": "Convenient"
+      },
+      "cookware": {
+        "title": "Cookware",
+        "description": "Complete set"
+      }
+    },
+    "outdoors": {
+      "title": "Outdoors",
+      "pool": {
+        "title": "Private Pool",
+        "description": "Swimming"
+      },
+      "garden": {
+        "title": "Garden",
+        "description": "Private area"
+      },
+      "bbq": {
+        "title": "BBQ Area",
+        "description": "Outdoor grill"
+      },
+      "dining": {
+        "title": "Outdoor Dining",
+        "description": "Al fresco"
+      }
+    }
+  },
+  "houseRules": {
+    "title": "House Rules",
+    "checkIn": "Check-in: 12:00 AM (midnight)"
+  }
+}

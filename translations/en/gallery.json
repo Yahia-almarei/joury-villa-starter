@@ -1,0 +1,22 @@
+{
+  "header": {
+    "title": "Photo Gallery",
+    "subtitle": "Take a virtual tour of Joury Villa and discover the beautiful spaces and amenities that await you"
+  },
+  "images": {
+    "altText": "Villa gallery image"
+  },
+  "instagram": {
+    "title": "Watch Villa Videos",
+    "subtitle": "Follow us on Instagram for more content"
+  },
+  "cta": {
+    "title": "Ready to Experience Joury Villa?",
+    "subtitle": "Book your stay and enjoy all the beautiful spaces and amenities showcased in this gallery",
+    "checkAvailability": "Check Availability"
+  },
+  "modal": {
+    "altText": "Selected villa image",
+    "close": "×"
+  }
+}

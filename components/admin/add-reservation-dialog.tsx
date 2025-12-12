@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,6 +17,7 @@ import {
 import { CalendarDays } from 'lucide-react'
 import { DatePicker } from '@/components/ui/date-picker'
 import { format } from 'date-fns'
+import { useTranslation } from '@/lib/use-translation'
 
 interface AddReservationDialogProps {
   trigger?: React.ReactNode
@@ -26,6 +27,7 @@ interface AddReservationDialogProps {
 }
 
 export function AddReservationDialog({ trigger, onSuccess, initialStartDate, initialEndDate }: AddReservationDialogProps) {
+  const { t } = useTranslation('admin')
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [checkInDate, setCheckInDate] = useState<Date | undefined>(
@@ -36,10 +38,71 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
   )
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
-  const [adults, setAdults] = useState('2')
-  const [children, setChildren] = useState('0')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState('AWAITING_APPROVAL')
+  const [reservedDates, setReservedDates] = useState<Set<string>>(new Set())
+
+  // Fetch reserved dates when dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchReservedDates()
+    }
+  }, [open])
+
+  const fetchReservedDates = async () => {
+    try {
+      const [reservationsResponse, blockedPeriodsResponse] = await Promise.all([
+        fetch('/api/admin/reservations'),
+        fetch('/api/admin/blocked-periods')
+      ])
+      
+      const reservationsData = await reservationsResponse.json()
+      const blockedData = await blockedPeriodsResponse.json()
+      
+      const reserved = new Set<string>()
+      
+      // Add reservation dates
+      if (reservationsData.success) {
+        reservationsData.reservations.forEach((reservation: any) => {
+          if (['PAID', 'APPROVED', 'AWAITING_APPROVAL'].includes(reservation.status)) {
+            const checkIn = new Date(reservation.check_in)
+            const checkOut = new Date(reservation.check_out)
+            
+            // Add all nights between check-in and check-out (excluding check-out day)
+            const currentDate = new Date(checkIn)
+            while (currentDate < checkOut) {
+              reserved.add(format(currentDate, 'yyyy-MM-dd'))
+              currentDate.setDate(currentDate.getDate() + 1)
+            }
+          }
+        })
+      }
+      
+      // Add blocked period dates
+      if (blockedData.success) {
+        blockedData.blockedPeriods.forEach((period: any) => {
+          const startDate = new Date(period.start_date)
+          const endDate = new Date(period.end_date)
+          
+          // Add all days in blocked period (including both start and end)
+          const currentDate = new Date(startDate)
+          while (currentDate <= endDate) {
+            reserved.add(format(currentDate, 'yyyy-MM-dd'))
+            currentDate.setDate(currentDate.getDate() + 1)
+          }
+        })
+      }
+      
+      setReservedDates(reserved)
+    } catch (error) {
+      console.error('Error fetching reserved dates:', error)
+    }
+  }
+
+  const isDateReserved = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd')
+    return reservedDates.has(dateString)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,8 +138,8 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
         check_in: format(checkInDate, 'yyyy-MM-dd'),
         check_out: format(checkOutDate, 'yyyy-MM-dd'),
         nights,
-        adults: parseInt(adults),
-        children: parseInt(children),
+        adults: 2,
+        children: 0,
         status: status,
         total: nights * 500, // Default rate, can be calculated properly
         subtotal: nights * 500,
@@ -101,19 +164,18 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
         setCheckOutDate(undefined)
         setGuestName('')
         setGuestEmail('')
-        setAdults('2')
-        setChildren('0')
         setNotes('')
         setStatus('AWAITING_APPROVAL')
         onSuccess?.()
-        
+
         alert('Reservation created successfully!')
       } else {
-        alert(data.error || 'Failed to create reservation')
+        console.error('Reservation creation failed:', data)
+        alert(`Failed to create reservation: ${data.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error creating reservation:', error)
-      alert('Failed to create reservation')
+      alert(`Failed to create reservation: ${error instanceof Error ? error.message : 'Network error'}`)
     } finally {
       setLoading(false)
     }
@@ -122,7 +184,7 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
   const defaultTrigger = (
     <Button className="w-full justify-start" variant="outline">
       <CalendarDays className="w-4 h-4 mr-2" />
-      Add Reservation
+      {t('calendar.quickActions.addReservation')}
     </Button>
   )
 
@@ -135,7 +197,7 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CalendarDays className="w-5 h-5" />
-            Add Reservation
+            {t('calendar.quickActions.addReservation')}
           </DialogTitle>
           <DialogDescription>
             Create a new reservation for a guest.
@@ -150,7 +212,10 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
                   date={checkInDate}
                   onDateChange={setCheckInDate}
                   placeholder="Select check-in date"
-                  disabledDates={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  disabledDates={(date) => {
+                    const today = new Date(new Date().setHours(0, 0, 0, 0))
+                    return date < today || isDateReserved(date)
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -162,6 +227,15 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
                   disabledDates={(date) => {
                     const today = new Date(new Date().setHours(0, 0, 0, 0))
                     if (checkInDate) {
+                      // Check if any date between checkInDate and this date is reserved
+                      const tempDate = new Date(checkInDate)
+                      tempDate.setDate(tempDate.getDate() + 1) // Start from day after check-in
+                      while (tempDate < date) {
+                        if (isDateReserved(tempDate)) {
+                          return true // Block this check-out date if any night in between is reserved
+                        }
+                        tempDate.setDate(tempDate.getDate() + 1)
+                      }
                       return date <= checkInDate || date < today
                     }
                     return date < today
@@ -193,34 +267,6 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="adults">Adults</Label>
-                <select
-                  id="adults"
-                  value={adults}
-                  onChange={(e) => setAdults(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  {[1,2,3,4,5,6,7,8].map(num => (
-                    <option key={num} value={num.toString()}>{num}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="children">Children</Label>
-                <select
-                  id="children"
-                  value={children}
-                  onChange={(e) => setChildren(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                >
-                  {[0,1,2,3,4].map(num => (
-                    <option key={num} value={num.toString()}>{num}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
             
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
@@ -228,7 +274,7 @@ export function AddReservationDialog({ trigger, onSuccess, initialStartDate, ini
                 id="status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full px-3 py-2 border border-input rounded-md text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
               >
                 <option value="AWAITING_APPROVAL">Awaiting Approval</option>
                 <option value="APPROVED">Approved</option>

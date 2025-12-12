@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { useTranslation } from '@/lib/use-translation'
 
 interface Reservation {
   id: string
@@ -28,6 +29,7 @@ interface PendingReservationsProps {
 }
 
 export default function PendingReservations({ initialReservations }: PendingReservationsProps) {
+  const { t } = useTranslation('admin')
   const [reservations, setReservations] = useState<Reservation[]>(initialReservations)
   const [loading, setLoading] = useState<Record<string, boolean>>({})
 
@@ -97,10 +99,10 @@ export default function PendingReservations({ initialReservations }: PendingRese
           <div>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Pending Approvals
+              {t('dashboard.metrics.pendingApprovals')}
             </CardTitle>
             <CardDescription>
-              Reservations waiting for your approval
+              {t('dashboard.metrics.pendingApprovalsDesc')}
             </CardDescription>
           </div>
           <Badge variant="destructive" className="text-lg px-3 py-1">
@@ -131,7 +133,7 @@ export default function PendingReservations({ initialReservations }: PendingRese
             
             <div className="flex gap-2">
               <Link href={`/admin/reservations/${reservation.id}`}>
-                <Button size="sm" variant="outline">View Details</Button>
+                <Button size="sm" variant="outline">{t('reservations.actions.reservationDetails')}</Button>
               </Link>
               <Button 
                 size="sm" 

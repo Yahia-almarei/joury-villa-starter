@@ -25,7 +25,7 @@ export default async function AdminCalendarPage() {
   try {
     const [revenueData, reservations] = await Promise.all([
       db.getMonthlyRevenue(monthStart.toISOString(), monthEnd.toISOString()),
-      db.findReservationsByStatus('ALL') // Get all reservations and filter later
+      db.getReservationsByDateRange(monthStart.toISOString().split('T')[0], monthEnd.toISOString().split('T')[0]) // Only get current month for performance
     ])
     
     monthlyRevenue = revenueData

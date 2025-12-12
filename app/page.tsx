@@ -23,7 +23,8 @@ import {
   Globe,
   Plus,
   Minus,
-  Flame
+  Flame,
+  CalendarDays
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "@/lib/use-translation";
@@ -61,101 +62,85 @@ export default function HomePage() {
   const property = {
     id: 'joury-villa-001',
     name: 'Joury Villa',
-    address: 'Jericho, Palestinian Territories',
+    address: '123 Ocean Drive, Miami Beach, FL 33139, USA',
     pricePerNight: 500,
     currency: 'ILS',
-    description: 'Luxury villa rental in historic Jericho, Palestinian Territories. Experience comfort and hospitality in one of the world\'s oldest cities.',
+    description: 'Luxury villa rental in Miami Beach. Experience comfort and hospitality in one of the world\'s most vibrant cities.',
     amenities: ['Swimming Pool', 'Free WiFi', 'Parking', 'Kitchen', 'Air Conditioning', 'Heating'],
-    images: ['/images/homepage-pic-1.jpg', '/images/homepage-pic-2.jpg', '/images/homepage-pic-3.jpg']
+    images: ['/images/homepage-pic-1.jpg', '/images/Homepage2.png', '/images/Homepage1.png']
   }
   
   return (
     <>
-      {/* Hero Section - Clear Image and Better Calendar */}
-      <section className="relative h-[70vh] flex items-center justify-center">
+      {/* Hero Section */}
+      <section className="relative h-[60vh] sm:h-[70vh] md:h-[80vh]">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/images/homepage-pic-1.jpg"
+            src="/images/Homepage.png"
             alt="Joury Villa - Luxury vacation rental"
             fill
             className="object-cover object-center"
             priority
             quality={95}
+            sizes="100vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/20"></div>
         </div>
-        
-        <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-8">
-            {t('hero.title')}
-          </h1>
-          
-          {/* Booking Widget - Crystal Clear Calendar */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-8 max-w-5xl mx-auto border border-white/20">
-            <div className="text-center mb-6">
-              <p className="text-sm text-gray-600">
-                ✨ <strong>{t('hero.noBookingFees')}</strong>
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-              <div className="space-y-3">
-                <label className="block text-sm font-semibold text-gray-800">{t('booking.checkIn')}</label>
-                <input
-                  type="date"
-                  value={checkInDate}
-                  onChange={handleCheckInChange}
-                  min={today}
-                  onKeyDown={(e) => e.preventDefault()}
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-gray-900 bg-white focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20 transition-all text-center"
-                  style={{
-                    colorScheme: 'light',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    lineHeight: '1.2',
-                    height: '64px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                />
+
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center text-white max-w-4xl mx-auto px-4">
+        </div>
+
+        {/* Booking Widget - Positioned at bottom overlapping */}
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 z-20 w-full max-w-4xl px-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 border border-gray-100">
+            <div className="flex flex-col gap-3">
+              {/* Date inputs row */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Check-in Date */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-gray-700">{t('booking.checkIn')}</label>
+                  <input
+                    type="date"
+                    value={checkInDate}
+                    onChange={handleCheckInChange}
+                    min={today}
+                    onKeyDown={(e) => e.preventDefault()}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20 transition-all text-sm"
+                    style={{
+                      colorScheme: 'light'
+                    }}
+                  />
+                </div>
+
+                {/* Check-out Date */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-gray-700">{t('booking.checkOut')}</label>
+                  <input
+                    type="date"
+                    value={checkOutDate}
+                    onChange={handleCheckOutChange}
+                    min={getMinCheckOutDate()}
+                    onKeyDown={(e) => e.preventDefault()}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 bg-white focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20 transition-all text-sm"
+                    style={{
+                      colorScheme: 'light'
+                    }}
+                  />
+                </div>
               </div>
-              <div className="space-y-3">
-                <label className="block text-sm font-semibold text-gray-800">{t('booking.checkOut')}</label>
-                <input
-                  type="date"
-                  value={checkOutDate}
-                  onChange={handleCheckOutChange}
-                  min={getMinCheckOutDate()}
-                  onKeyDown={(e) => e.preventDefault()}
-                  className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-gray-900 bg-white focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/20 transition-all text-center"
-                  style={{
-                    colorScheme: 'light',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    lineHeight: '1.2',
-                    height: '64px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                />
-              </div>
-              <div className="space-y-3">
-                <label className="block text-sm font-semibold text-gray-800">&nbsp;</label>
-                <Link href="/availability">
-                  <Button className="w-full bg-coral hover:bg-coral/90 text-white px-8 py-5 rounded-xl text-lg font-bold shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-                    <Search className="w-5 h-5" />
-                    {t('booking.checkAvailability')}
-                  </Button>
-                </Link>
-              </div>
+
+              {/* Button */}
+              <Link href="/availability">
+                <Button className="w-full bg-coral hover:bg-coral/90 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all text-base">
+                  {t('booking.checkAvailability')}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* How to Book - Simple Process */}
-      <section className="py-16 bg-blue-50">
+      <section className="pt-32 sm:pt-28 md:pt-24 pb-16 bg-blue-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('howToBook.title')}</h2>
@@ -209,7 +194,7 @@ export default function HomePage() {
             
             <div className="relative">
               <Image
-                src="/images/homepage-pic-3.jpg"
+                src="/images/Homepage1.png"
                 alt="Villa pool area"
                 width={600}
                 height={400}
@@ -226,7 +211,7 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="order-2 lg:order-1">
               <Image
-                src="/images/homepage-pic-2.jpg"
+                src="/images/Homepage2.png"
                 alt="Villa bedroom"
                 width={600}
                 height={400}
@@ -326,7 +311,7 @@ export default function HomePage() {
             <div>
               <h3 className="text-xl font-bold mb-6">{t('footer.title')}</h3>
               <p className="text-gray-300 mb-4">
-                {t('footer.description')}
+                Your gateway to experiencing luxury living in the vibrant city of Miami Beach.
               </p>
             </div>
             
@@ -335,25 +320,15 @@ export default function HomePage() {
               <ul className="space-y-3 text-gray-300">
                 <li><Link href="/" className="hover:text-coral">{t('footer.home')}</Link></li>
                 <li><Link href="/availability" className="hover:text-coral">{t('footer.bookNow')}</Link></li>
-                <li><Link href="/policies" className="hover:text-coral">{t('footer.policies')}</Link></li>
               </ul>
             </div>
             
-            <div>
-              <h4 className="text-lg font-semibold mb-6">{t('footer.contact')}</h4>
-              <div className="space-y-4 text-gray-300">
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5" />
-                  <span>+970 123 456 789</span>
-                </div>
-              </div>
-            </div>
             
             <div>
               <h4 className="text-lg font-semibold mb-6">{t('footer.location')}</h4>
               <div className="flex items-start space-x-3 text-gray-300">
                 <MapPin className="w-5 h-5 mt-1" />
-                <span>{t('footer.address')}</span>
+                <span>123 Ocean Drive, Miami Beach, FL 33139, USA</span>
               </div>
             </div>
           </div>

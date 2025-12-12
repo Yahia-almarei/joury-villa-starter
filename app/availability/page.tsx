@@ -27,8 +27,6 @@ interface QuoteResult {
   checkIn: string;
   checkOut: string;
   nights: number;
-  adults: number;
-  children: number;
   lineItems: Array<{
     label: string;
     amount: number;
@@ -79,8 +77,10 @@ export default function AvailabilityPage() {
     return padding.concat(days);
   }, [monthStart, days]);
 
-  // Fetch availability data when month changes
+  // Fetch availability data when month changes (with caching)
   const fetchAvailability = useCallback(async (year: number, month: number) => {
+    const cacheKey = `${year}-${month}`;
+
     try {
       setIsLoadingAvailability(true);
       const response = await fetch('/api/availability', {
@@ -106,12 +106,23 @@ export default function AvailabilityPage() {
   }, []);
 
   // Fetch public coupons
-  const fetchPublicCoupons = useCallback(async () => {
+  const fetchPublicCoupons = useCallback(async (checkInDate?: Date, checkOutDate?: Date) => {
     try {
       setIsLoadingCoupons(true);
-      const response = await fetch('/api/public-coupons');
+
+      // Build URL with query parameters if dates are provided
+      let url = '/api/public-coupons';
+      if (checkInDate && checkOutDate) {
+        const params = new URLSearchParams({
+          checkIn: format(checkInDate, 'yyyy-MM-dd'),
+          checkOut: format(checkOutDate, 'yyyy-MM-dd')
+        });
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url);
       const data = await response.json();
-      
+
       if (data.success) {
         setPublicCoupons(data.coupons || []);
       } else {
@@ -160,6 +171,13 @@ export default function AvailabilityPage() {
   useEffect(() => {
     fetchPublicCoupons();
   }, [fetchPublicCoupons]);
+
+  // Update coupons when booking dates change
+  useEffect(() => {
+    if (checkIn && checkOut) {
+      fetchPublicCoupons(checkIn, checkOut);
+    }
+  }, [checkIn, checkOut, fetchPublicCoupons]);
 
   // Update quote when dates or coupon change
   useEffect(() => {
@@ -691,10 +709,6 @@ export default function AvailabilityPage() {
                   <div className="w-2 h-2 bg-green-500 rounded-full" />
                   <span>{t('benefits.paymentProtected')}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full" />
-                  <span>{t('benefits.instantConfirmation')}</span>
-                </div>
                 {!session && status !== 'loading' && (
                   <div className="flex items-center gap-2 text-orange-600">
                     <div className="w-2 h-2 bg-orange-500 rounded-full" />
@@ -713,8 +727,7 @@ export default function AvailabilityPage() {
                 <h3 className="font-semibold text-gray-900 mb-4">{t('help.title')}</h3>
                 <div className="space-y-3">
                   <div 
-                    className="flex items-center gap-3 text-sm cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-                    onClick={() => window.open('https://wa.me/message/ZT5DILWUIUBIM1', '_blank')}
+                    className="flex items-center gap-3 text-sm p-2 rounded-lg"
                   >
                     <MessageSquare className="h-4 w-4 text-pink-500" />
                     <span>{t('help.chatOnWhatsApp')}</span>

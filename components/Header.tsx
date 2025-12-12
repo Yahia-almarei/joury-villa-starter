@@ -23,6 +23,7 @@ export function Header() {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation('header');
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -130,23 +131,134 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <button 
-                onClick={() => signIn('google')}
+              <Link
+                href="/auth/signin"
                 className="hidden md:flex items-center space-x-1 text-gray-700 hover:text-coral transition-colors"
               >
                 <Users className="w-4 h-4" />
                 <span className="text-sm font-medium">{t('actions.signIn')}</span>
-              </button>
+              </Link>
             )}
 
             {/* Mobile Menu Button */}
-            <button className="lg:hidden p-2 text-gray-700 hover:text-coral transition-colors">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 text-gray-700 hover:text-coral transition-colors"
+              aria-label="Toggle menu"
+            >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-gray-200 bg-white">
+            <nav className="px-4 py-4 space-y-3">
+              <Link
+                href="/"
+                className="block py-2 text-gray-700 hover:text-coral font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('navigation.home')}
+              </Link>
+              <Link
+                href="/overview"
+                className="block py-2 text-gray-700 hover:text-coral font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('navigation.overview')}
+              </Link>
+              <Link
+                href="/map"
+                className="block py-2 text-gray-700 hover:text-coral font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('navigation.map')}
+              </Link>
+              <Link
+                href="/gallery"
+                className="block py-2 text-gray-700 hover:text-coral font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('navigation.gallery')}
+              </Link>
+              <Link
+                href="/reviews"
+                className="block py-2 text-gray-700 hover:text-coral font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('navigation.reviews')}
+              </Link>
+              <Link
+                href="/availability"
+                className="block py-2 text-gray-700 hover:text-coral font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('navigation.availability')}
+              </Link>
+              <Link
+                href="/contact"
+                className="block py-2 text-gray-700 hover:text-coral font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {t('navigation.contact')}
+              </Link>
+
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <button
+                  onClick={() => {
+                    setLanguage(language === 'en' ? 'ar' : 'en');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center space-x-2 py-2 text-gray-700 hover:text-coral transition-colors w-full"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span className="font-medium">{t('actions.language')}</span>
+                </button>
+
+                {session ? (
+                  <>
+                    <Link
+                      href="/account"
+                      className="flex items-center space-x-2 py-2 text-gray-700 hover:text-coral transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="font-medium">Profile</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        handleSignOut();
+                      }}
+                      className="flex items-center space-x-2 py-2 text-red-600 hover:text-red-700 transition-colors w-full"
+                      disabled={isSigningOut}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="font-medium">{isSigningOut ? 'Signing out...' : 'Sign out'}</span>
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/auth/signin"
+                    className="flex items-center space-x-2 py-2 text-gray-700 hover:text-coral transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span className="font-medium">{t('actions.signIn')}</span>
+                  </Link>
+                )}
+              </div>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

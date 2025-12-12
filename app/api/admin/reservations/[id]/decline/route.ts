@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
+import { sendBookingDeclined } from '@/lib/email-service'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -22,14 +23,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     
     // Update reservation status to CANCELLED
     const updatedReservation = await db.updateReservation(reservationId, {
-      status: 'CANCELLED',
-      cancelled_at: new Date().toISOString(),
-      cancellation_reason: reason || 'Declined by admin'
+      status: 'CANCELLED'
     })
-    
+
+    // Send decline email to customer
+    await sendBookingDeclined(reservationId, reason)
+
     return NextResponse.json({
       success: true,
-      message: 'Reservation declined successfully',
+      message: 'Reservation declined successfully and notification email sent',
       reservation: updatedReservation
     })
   } catch (error) {

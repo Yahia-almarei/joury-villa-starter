@@ -1,19 +1,27 @@
-import { requireAdmin } from '@/lib/admin-auth'
-import { createClient } from '@supabase/supabase-js'
+'use client'
+
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { ArrowLeft, Calendar, Users, DollarSign, MapPin } from 'lucide-react'
+import { ArrowLeft, Calendar, Users, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatCurrency } from '@/lib/utils'
-import { notFound } from 'next/navigation'
-import ReservationActions from '@/components/admin/reservation-actions'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Helper function to safely format dates
+const formatDate = (dateString: string | null | undefined, formatStr: string) => {
+  if (!dateString) return 'N/A'
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'Invalid date'
+    return format(date, formatStr)
+  } catch {
+    return 'Invalid date'
+  }
+}
+import { useTranslation } from '@/lib/use-translation'
+import ReservationActions from '@/components/admin/reservation-actions'
 
 interface ReservationPageProps {
   params: {
@@ -21,41 +29,37 @@ interface ReservationPageProps {
   }
 }
 
-export default async function ReservationPage({ params }: ReservationPageProps) {
-  await requireAdmin()
+export default function ReservationPage({ params }: ReservationPageProps) {
+  const { t } = useTranslation('admin')
+  const [reservation, setReservation] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  let reservation: any = null
-  
-  try {
-    const { data, error } = await supabase
-      .from('reservations')
-      .select(`
-        *,
-        users (
-          email,
-          customer_profiles (
-            full_name,
-            phone
-          )
-        ),
-        properties (
-          name
-        )
-      `)
-      .eq('id', params.id)
-      .single()
-      
-    if (error) {
-      console.error('Error fetching reservation:', error)
-    } else {
-      reservation = data
+  useEffect(() => {
+    const fetchReservation = async () => {
+      try {
+        const response = await fetch(`/api/admin/reservations/${params.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success) {
+            setReservation(data.reservation)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching reservation:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  } catch (error) {
-    console.error('Error fetching reservation:', error)
+
+    fetchReservation()
+  }, [params.id])
+
+  if (loading) {
+    return <div className="container py-8">Loading...</div>
   }
 
   if (!reservation) {
-    notFound()
+    return <div className="container py-8">Reservation not found</div>
   }
 
   const getStatusColor = (status: string) => {
@@ -76,13 +80,13 @@ export default async function ReservationPage({ params }: ReservationPageProps) 
         <Link href="/admin">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
+            {t('reservationDetails.backToDashboard')}
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Reservation Details</h1>
+          <h1 className="text-3xl font-bold">{t('reservationDetails.title')}</h1>
           <p className="text-muted-foreground">
-            View and manage reservation #{reservation.id.slice(0, 8)}...
+            {t('reservationDetails.subtitle')} #{reservation.id.slice(0, 8)}...
           </p>
         </div>
       </div>
@@ -94,7 +98,7 @@ export default async function ReservationPage({ params }: ReservationPageProps) 
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Guest Information
+              {t('reservationDetails.guestInformation')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -104,23 +108,13 @@ export default async function ReservationPage({ params }: ReservationPageProps) 
               </h3>
               <p className="text-muted-foreground">{reservation.users?.email}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium">Adults</p>
-                <p className="text-2xl font-bold">{reservation.adults}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Children</p>
-                <p className="text-2xl font-bold">{reservation.children}</p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
         {/* Reservation Status */}
         <Card>
           <CardHeader>
-            <CardTitle>Status & Timing</CardTitle>
+            <CardTitle>{t('reservationDetails.statusAndTiming')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -130,28 +124,28 @@ export default async function ReservationPage({ params }: ReservationPageProps) 
             </div>
             <div className="space-y-2">
               <div>
-                <p className="text-sm font-medium">Created</p>
-                <p>{format(new Date(reservation.created_at), 'MMM d, yyyy h:mm a')}</p>
+                <p className="text-sm font-medium">{t('reservationDetails.created')}</p>
+                <p>{formatDate(reservation.created_at, 'MMM d, yyyy h:mm a')}</p>
               </div>
               {reservation.approved_at && (
                 <div>
-                  <p className="text-sm font-medium">Approved</p>
-                  <p>{format(new Date(reservation.approved_at), 'MMM d, yyyy h:mm a')}</p>
+                  <p className="text-sm font-medium">{t('reservationDetails.approved')}</p>
+                  <p>{formatDate(reservation.approved_at, 'MMM d, yyyy h:mm a')}</p>
                 </div>
               )}
               {reservation.paid_at && (
                 <div>
-                  <p className="text-sm font-medium">Paid</p>
-                  <p>{format(new Date(reservation.paid_at), 'MMM d, yyyy h:mm a')}</p>
+                  <p className="text-sm font-medium">{t('reservationDetails.paid')}</p>
+                  <p>{formatDate(reservation.paid_at, 'MMM d, yyyy h:mm a')}</p>
                 </div>
               )}
               {reservation.cancelled_at && (
                 <div>
-                  <p className="text-sm font-medium">Cancelled</p>
-                  <p>{format(new Date(reservation.cancelled_at), 'MMM d, yyyy h:mm a')}</p>
+                  <p className="text-sm font-medium">{t('reservationDetails.cancelled')}</p>
+                  <p>{formatDate(reservation.cancelled_at, 'MMM d, yyyy h:mm a')}</p>
                   {reservation.cancellation_reason && (
                     <p className="text-sm text-muted-foreground">
-                      Reason: {reservation.cancellation_reason}
+                      {t('reservationDetails.reason')}: {reservation.cancellation_reason}
                     </p>
                   )}
                 </div>
@@ -166,25 +160,25 @@ export default async function ReservationPage({ params }: ReservationPageProps) 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Stay Details
+            {t('reservationDetails.stayDetails')}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid md:grid-cols-3 gap-6">
           <div>
-            <p className="text-sm font-medium mb-2">Check-in</p>
+            <p className="text-sm font-medium mb-2">{t('reservationDetails.checkIn')}</p>
             <p className="text-lg font-semibold">
-              {format(new Date(reservation.check_in), 'MMM d, yyyy')}
+              {formatDate(reservation.check_in, 'MMM d, yyyy')}
             </p>
           </div>
           <div>
-            <p className="text-sm font-medium mb-2">Check-out</p>
+            <p className="text-sm font-medium mb-2">{t('reservationDetails.checkOut')}</p>
             <p className="text-lg font-semibold">
-              {format(new Date(reservation.check_out), 'MMM d, yyyy')}
+              {formatDate(reservation.check_out, 'MMM d, yyyy')}
             </p>
           </div>
           <div>
-            <p className="text-sm font-medium mb-2">Duration</p>
-            <p className="text-lg font-semibold">{reservation.nights} nights</p>
+            <p className="text-sm font-medium mb-2">{t('reservationDetails.duration')}</p>
+            <p className="text-lg font-semibold">{reservation.nights} {t('reservationDetails.nights')}</p>
           </div>
         </CardContent>
       </Card>
@@ -194,29 +188,29 @@ export default async function ReservationPage({ params }: ReservationPageProps) 
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Pricing Breakdown
+            {t('reservationDetails.pricingBreakdown')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex justify-between">
-            <span>Subtotal ({reservation.nights} nights)</span>
+            <span>{t('reservationDetails.subtotal')} ({reservation.nights} {t('reservationDetails.nights')})</span>
             <span>{formatCurrency(reservation.subtotal)}</span>
           </div>
           {reservation.fees > 0 && (
             <div className="flex justify-between">
-              <span>Fees</span>
+              <span>{t('reservationDetails.fees')}</span>
               <span>{formatCurrency(reservation.fees)}</span>
             </div>
           )}
           {reservation.taxes > 0 && (
             <div className="flex justify-between">
-              <span>Taxes</span>
+              <span>{t('reservationDetails.taxes')}</span>
               <span>{formatCurrency(reservation.taxes)}</span>
             </div>
           )}
           <hr />
           <div className="flex justify-between font-semibold text-lg">
-            <span>Total</span>
+            <span>{t('reservationDetails.total')}</span>
             <span>{formatCurrency(reservation.total)}</span>
           </div>
         </CardContent>

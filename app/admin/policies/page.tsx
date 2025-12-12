@@ -1,374 +1,257 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useTranslation } from '@/lib/use-translation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { 
-  FileText,
+import { Switch } from '@/components/ui/switch'
+import {
+  Home,
   Save,
   Edit,
   Plus,
   Trash2,
-  Eye,
-  EyeOff,
   AlertCircle,
-  CheckCircle,
   Clock,
-  Globe
+  Languages
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useTranslation } from '@/lib/use-translation'
 
-interface Policy {
+interface HouseRule {
   id: string
-  title: string
-  type: string
-  content: string
+  title_en: string
+  title_ar: string
+  description_en: string
+  description_ar: string
+  icon: string
   is_active: boolean
-  version: number
-  effective_date?: string
+  order_index: number
   created_at: string
   updated_at: string
 }
 
-export default function AdminPoliciesPage() {
-  const { t } = useTranslation('admin')
-  const [policies, setPolicies] = useState<Policy[]>([])
+const ICON_OPTIONS = [
+  { value: 'Clock', label: 'Clock', icon: Clock },
+  { value: 'Home', label: 'Home', icon: Home },
+  { value: 'AlertCircle', label: 'Alert', icon: AlertCircle }
+]
+
+export default function HouseRulesPage() {
+  const { t } = useTranslation('admin');
+  const [houseRules, setHouseRules] = useState<HouseRule[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingRule, setEditingRule] = useState<HouseRule | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null)
-  const [showNewPolicy, setShowNewPolicy] = useState(false)
-  
-  // Form state
   const [formData, setFormData] = useState({
-    title: '',
-    type: 'cancellation',
-    content: '',
-    is_active: true,
-    effective_date: ''
+    description_en: '',
+    description_ar: '',
+    is_active: true
   })
-  
-  const supabase = createClientComponentClient()
-  
-  useEffect(() => {
-    fetchPolicies()
-  }, [])
-  
-  const fetchPolicies = async () => {
-    setLoading(true)
-    console.log('🔍 Fetching policies via API...')
+
+  // Fetch house rules
+  const fetchHouseRules = async () => {
     try {
-      const response = await fetch('/api/admin/policies')
-      const result = await response.json()
-      
-      if (!result.success) {
-        console.error('❌ Error fetching policies:', result.error)
-        alert('Error fetching policies: ' + result.error)
-        return
+      const response = await fetch('/api/admin/house-rules')
+      if (response.ok) {
+        const data = await response.json()
+        setHouseRules(data.houseRules || [])
       }
-      
-      console.log('📄 Fetched policies:', result.data)
-      setPolicies(result.data || [])
     } catch (error) {
-      console.error('💥 Unexpected error fetching policies:', error)
-      alert('Unexpected error fetching policies: ' + (error as Error).message)
+      console.error('Failed to fetch house rules:', error)
     } finally {
       setLoading(false)
     }
   }
-  
+
+  useEffect(() => {
+    fetchHouseRules()
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    
-    console.log('🚀 Starting policy creation/update...')
-    console.log('📝 Form data:', formData)
-    
+
     try {
-      const policyData = {
-        ...formData,
-        effective_date: formData.effective_date || null,
-        version: editingPolicy ? editingPolicy.version + 1 : 1
-      }
-      
-      console.log('💾 Policy data to save:', policyData)
-      
-      if (editingPolicy) {
-        console.log('✏️ Updating existing policy via API...')
-        const response = await fetch('/api/admin/policies', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingPolicy.id, ...policyData })
+      const url = editingRule ? `/api/admin/house-rules/${editingRule.id}` : '/api/admin/house-rules'
+      const method = editingRule ? 'PUT' : 'POST'
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description_en: formData.description_en,
+          description_ar: formData.description_ar,
+          icon: 'Clock',
+          is_active: formData.is_active,
+          order_index: editingRule?.order_index || houseRules.length
         })
-        
-        const result = await response.json()
-        
-        if (!result.success) {
-          console.error('❌ Error updating policy:', result.error)
-          alert('Error updating policy: ' + result.error)
-          return
-        }
-        console.log('✅ Policy updated successfully!')
+      })
+
+      if (response.ok) {
+        fetchHouseRules()
+        resetForm()
+        alert(editingRule ? t('policies.alerts.updateSuccess') : t('policies.alerts.createSuccess'))
       } else {
-        console.log('➕ Creating new policy via API...')
-        const response = await fetch('/api/admin/policies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(policyData)
-        })
-        
-        const result = await response.json()
-        
-        if (!result.success) {
-          console.error('❌ Error creating policy:', result.error)
-          alert('Error creating policy: ' + result.error)
-          return
-        }
-        console.log('✅ Policy created successfully!', result.data)
+        const error = await response.json()
+        alert(t('policies.alerts.createError') + ': ' + error.message)
       }
-      
-      console.log('🔄 Refreshing policies list...')
-      await fetchPolicies()
-      resetForm()
-      alert(t('policies.alerts.policySuccess'))
-      
     } catch (error) {
-      console.error('💥 Unexpected error:', error)
-      alert('Unexpected error: ' + (error as Error).message)
+      alert(t('policies.alerts.createError'))
     } finally {
       setSaving(false)
     }
   }
-  
-  const resetForm = () => {
+
+  const handleEdit = (rule: HouseRule) => {
+    setEditingRule(rule)
     setFormData({
-      title: '',
-      type: 'cancellation',
-      content: '',
-      is_active: true,
-      effective_date: ''
+      description_en: rule.description_en || '',
+      description_ar: rule.description_ar || '',
+      is_active: rule.is_active
     })
-    setShowNewPolicy(false)
-    setEditingPolicy(null)
+    setIsCreating(true)
   }
-  
-  const handleEdit = (policy: Policy) => {
-    setFormData({
-      title: policy.title,
-      type: policy.type,
-      content: policy.content,
-      is_active: policy.is_active,
-      effective_date: policy.effective_date ? new Date(policy.effective_date).toISOString().split('T')[0] : ''
-    })
-    setEditingPolicy(policy)
-    setShowNewPolicy(true)
-  }
-  
-  const handleDelete = async (policyId: string) => {
+
+  const handleDelete = async (ruleId: string) => {
     if (!confirm(t('policies.alerts.deleteConfirm'))) return
-    
+
     try {
-      console.log('🗑️ Deleting policy via API:', policyId)
-      
-      const response = await fetch(`/api/admin/policies?id=${policyId}`, {
+      const response = await fetch(`/api/admin/house-rules/${ruleId}`, {
         method: 'DELETE'
       })
-      
-      const result = await response.json()
-      
-      if (!result.success) {
-        console.error('❌ Error deleting policy:', result.error)
-        alert('Error deleting policy: ' + result.error)
-        return
+
+      if (response.ok) {
+        fetchHouseRules()
+        alert(t('policies.alerts.deleteSuccess'))
+      } else {
+        alert(t('policies.alerts.deleteError'))
       }
-      
-      console.log('✅ Policy deleted successfully')
-      fetchPolicies()
     } catch (error) {
-      console.error('💥 Unexpected error deleting policy:', error)
-      alert('Unexpected error: ' + (error as Error).message)
+      alert(t('policies.alerts.deleteError'))
     }
   }
-  
-  const togglePolicy = async (policyId: string, currentActive: boolean) => {
+
+  const toggleActive = async (rule: HouseRule) => {
     try {
-      console.log('🔄 Toggling policy status via API:', policyId)
-      
-      const response = await fetch('/api/admin/policies', {
+      const response = await fetch(`/api/admin/house-rules/${rule.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          id: policyId, 
-          is_active: !currentActive 
-        })
+        body: JSON.stringify({ ...rule, is_active: !rule.is_active })
       })
-      
-      const result = await response.json()
-      
-      if (!result.success) {
-        console.error('❌ Error toggling policy:', result.error)
-        alert('Error toggling policy: ' + result.error)
-        return
+
+      if (response.ok) {
+        fetchHouseRules()
       }
-      
-      console.log('✅ Policy status toggled successfully')
-      fetchPolicies()
     } catch (error) {
-      console.error('💥 Unexpected error toggling policy:', error)
-      alert('Unexpected error: ' + (error as Error).message)
+      alert(t('policies.alerts.updateError'))
     }
   }
-  
-  const getPolicyTypeColor = (type: string) => {
-    switch (type) {
-      case 'cancellation': return 'bg-red-100 text-red-800'
-      case 'terms': return 'bg-blue-100 text-blue-800'
-      case 'privacy': return 'bg-purple-100 text-purple-800'
-      case 'house_rules': return 'bg-green-100 text-green-800'
-      case 'damage': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
+
+  const resetForm = () => {
+    setFormData({
+      description_en: '',
+      description_ar: '',
+      is_active: true
+    })
+    setEditingRule(null)
+    setIsCreating(false)
   }
-  
-  const getPolicyTypeIcon = (type: string) => {
-    switch (type) {
-      case 'cancellation': return <AlertCircle className="w-4 h-4" />
-      case 'terms': return <FileText className="w-4 h-4" />
-      case 'privacy': return <Eye className="w-4 h-4" />
-      case 'house_rules': return <CheckCircle className="w-4 h-4" />
-      case 'damage': return <Clock className="w-4 h-4" />
-      default: return <FileText className="w-4 h-4" />
-    }
+
+  const getIconComponent = (iconName: string) => {
+    const iconOption = ICON_OPTIONS.find(opt => opt.value === iconName)
+    return iconOption ? iconOption.icon : Clock
   }
-  
-  const getPolicyTypeName = (type: string) => {
-    return t(`policies.types.${type}` as any) || type.replace('_', ' ')
+
+  if (loading) {
+    return (
+      <div className="container py-8">
+        <div className="text-center">{t('policies.loading')}</div>
+      </div>
+    )
   }
-  
+
   return (
-    <div className="space-y-6">
+    <div className="container py-8 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t('policies.title')}</h1>
-          <p className="text-gray-600">{t('policies.subtitle')}</p>
+          <h1 className="text-3xl font-bold">{t('policies.title')}</h1>
+          <p className="text-muted-foreground">
+            {t('policies.subtitle')}
+          </p>
         </div>
-        <div className="flex space-x-3">
-          <Button
-            variant="outline"
-            onClick={async () => {
-              try {
-                const response = await fetch('/api/admin/policies/setup', { method: 'POST' })
-                const result = await response.json()
-                console.log('🧪 Database test result:', result)
-                alert(result.success ? `✅ ${t('policies.alerts.testSuccess')}` : `❌ ${t('policies.alerts.testFail')} ${result.error}`)
-              } catch (error) {
-                console.error('Test failed:', error)
-                alert(`❌ ${t('policies.alerts.testError')} ${(error as Error).message}`)
-              }
-            }}
-          >
-            🧪 {t('policies.actions.testDB')}
-          </Button>
-          <Button
-            onClick={() => setShowNewPolicy(true)}
-            className="bg-coral hover:bg-coral/90"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t('policies.actions.newPolicy')}
-          </Button>
-        </div>
+        <Button onClick={() => setIsCreating(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          {t('policies.addHouseRule')}
+        </Button>
       </div>
-      
-      {/* New/Edit Policy Form */}
-      {showNewPolicy && (
+
+      {/* Create/Edit Form */}
+      {isCreating && (
         <Card>
           <CardHeader>
-            <CardTitle>{editingPolicy ? t('policies.form.editTitle') : t('policies.form.createTitle')}</CardTitle>
+            <CardTitle>{editingRule ? t('policies.form.editTitle') : t('policies.form.createTitle')}</CardTitle>
             <CardDescription>
               {t('policies.form.description')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* English Section */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Languages className="w-5 h-5" />
+                  <h3 className="text-lg font-semibold">{t('policies.form.englishVersion')}</h3>
+                </div>
                 <div>
-                  <Label htmlFor="title">{t('policies.form.policyTitle')}</Label>
+                  <Label htmlFor="description_en">{t('policies.form.houseRuleEnglish')}</Label>
                   <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder={t('policies.form.policyTitlePlaceholder')}
+                    id="description_en"
+                    value={formData.description_en}
+                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                    placeholder={t('policies.form.enterRuleEnglish')}
                     required
                   />
                 </div>
-                
-                <div>
-                  <Label htmlFor="type">{t('policies.form.policyType')}</Label>
-                  <select
-                    id="type"
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coral focus:border-transparent"
-                  >
-                    <option value="cancellation">{t('policies.types.cancellation')}</option>
-                    <option value="terms">{t('policies.types.terms')}</option>
-                    <option value="privacy">{t('policies.types.privacy')}</option>
-                    <option value="house_rules">{t('policies.types.house_rules')}</option>
-                    <option value="damage">{t('policies.types.damage')}</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="effective_date">{t('policies.form.effectiveDate')}</Label>
-                  <Input
-                    id="effective_date"
-                    type="date"
-                    value={formData.effective_date}
-                    onChange={(e) => setFormData({ ...formData, effective_date: e.target.value })}
-                  />
-                </div>
-                
+              </div>
+
+              {/* Arabic Section */}
+              <div className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="rounded border-gray-300"
+                  <Languages className="w-5 h-5" />
+                  <h3 className="text-lg font-semibold">{t('policies.form.arabicVersion')}</h3>
+                </div>
+                <div>
+                  <Label htmlFor="description_ar">{t('policies.form.houseRuleArabic')}</Label>
+                  <Input
+                    id="description_ar"
+                    value={formData.description_ar}
+                    onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                    placeholder={t('policies.form.enterRuleArabic')}
+                    className="text-right"
+                    dir="rtl"
+                    required
                   />
-                  <Label htmlFor="is_active">{t('policies.form.isActive')}</Label>
                 </div>
               </div>
-              
-              <div>
-                <Label htmlFor="content">{t('policies.form.policyContent')}</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder={t('policies.form.policyContentPlaceholder')}
-                  rows={10}
-                  required
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
-                <p className="text-sm text-gray-500 mt-1">
-                  {t('policies.form.htmlFormatting')}
-                </p>
+                <Label htmlFor="is_active">{t('policies.form.active')}</Label>
               </div>
-              
+
               <div className="flex space-x-4">
-                <Button 
-                  type="submit" 
-                  disabled={saving}
-                  className="bg-coral hover:bg-coral/90"
-                >
+                <Button type="submit" disabled={saving}>
                   <Save className="w-4 h-4 mr-2" />
-                  {saving ? t('policies.form.saving') : (editingPolicy ? t('policies.form.updatePolicy') : t('policies.form.createPolicy'))}
+                  {saving ? t('policies.form.saving') : (editingRule ? t('policies.form.updateRule') : t('policies.form.createRule'))}
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   {t('policies.form.cancel')}
@@ -378,118 +261,103 @@ export default function AdminPoliciesPage() {
           </CardContent>
         </Card>
       )}
-      
-      {/* Policies List */}
-      <div className="grid gap-6">
-        {loading ? (
+
+      {/* House Rules List */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">{t('policies.list.currentRules')}</h2>
+            <p className="text-muted-foreground">
+              {houseRules.length} {houseRules.length !== 1 ? t('policies.list.rulesConfigured') : t('policies.list.ruleConfigured')}
+            </p>
+          </div>
+        </div>
+
+        {houseRules.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-coral mx-auto"></div>
-              <p className="mt-4 text-gray-600">{t('policies.list.loading')}</p>
-            </CardContent>
-          </Card>
-        ) : policies.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>{t('policies.list.noPolicies')}</p>
-              <Button 
-                onClick={() => setShowNewPolicy(true)}
-                className="mt-4"
-                variant="outline"
-              >
+            <CardContent className="text-center py-8">
+              <Home className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500 mb-4">{t('policies.list.noRules')}</p>
+              <Button onClick={() => setIsCreating(true)}>
+                <Plus className="w-4 h-4 mr-2" />
                 {t('policies.list.createFirst')}
               </Button>
             </CardContent>
           </Card>
         ) : (
-          policies.map((policy) => (
-            <Card key={policy.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="flex items-center gap-2">
-                        {getPolicyTypeIcon(policy.type)}
-                        {policy.title}
-                      </CardTitle>
-                      <Badge className={getPolicyTypeColor(policy.type)}>
-                        {getPolicyTypeName(policy.type)}
+          <div className="space-y-6">
+            {houseRules.map((rule) => {
+              const IconComponent = getIconComponent(rule.icon)
+              return (
+                <div key={rule.id} className="space-y-4">
+                  {/* Rule Management Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <IconComponent className="w-5 h-5 text-gray-600" />
+                      <Badge variant={rule.is_active ? "default" : "secondary"}>
+                        {rule.is_active ? t('policies.list.active') : t('policies.list.inactive')}
                       </Badge>
-                      {!policy.is_active && (
-                        <Badge variant="secondary">{t('policies.list.inactive')}</Badge>
-                      )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>{t('policies.list.version')} {policy.version}</span>
-                      {policy.effective_date && (
-                        <span>{t('policies.list.effective')} {new Date(policy.effective_date).toLocaleDateString()}</span>
-                      )}
-                      <span>{t('policies.list.updated')} {new Date(policy.updated_at).toLocaleDateString()}</span>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleActive(rule)}
+                      >
+                        {rule.is_active ? t('policies.list.deactivate') : t('policies.list.activate')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(rule)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(rule.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => togglePolicy(policy.id, policy.is_active)}
-                    >
-                      {policy.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      {policy.is_active ? t('policies.list.hide') : t('policies.list.show')}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(policy)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(policy.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+
+                  {/* Language Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* English Card */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center space-x-2">
+                          <Languages className="w-4 h-4" />
+                          <CardTitle className="text-sm">{t('policies.list.englishVersion')}</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-700">{rule.description_en || t('policies.list.noEnglishDescription')}</p>
+                      </CardContent>
+                    </Card>
+
+                    {/* Arabic Card */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center space-x-2">
+                          <Languages className="w-4 h-4" />
+                          <CardTitle className="text-sm">{t('policies.list.arabicVersion')}</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-700 text-right" dir="rtl">{rule.description_ar || t('policies.list.noArabicDescription')}</p>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="prose max-w-none">
-                  <div 
-                    className="text-sm text-gray-700 line-clamp-3"
-                    dangerouslySetInnerHTML={{ __html: policy.content.substring(0, 200) + '...' }}
-                  />
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="mt-3 p-0 h-auto"
-                  onClick={() => handleEdit(policy)}
-                >
-                  <Globe className="w-4 h-4 mr-1" />
-                  {t('policies.list.viewFull')}
-                </Button>
-              </CardContent>
-            </Card>
-          ))
+              )
+            })}
+          </div>
         )}
       </div>
-      
-      {/* Policy Management Help */}
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>{t('policies.help.title')}</strong>
-          <ul className="mt-2 space-y-1 text-sm">
-            <li>{t('policies.help.versioning')}</li>
-            <li>{t('policies.help.effectiveDates')}</li>
-            <li>{t('policies.help.htmlFormatting')}</li>
-            <li>{t('policies.help.activeStatus')}</li>
-          </ul>
-        </AlertDescription>
-      </Alert>
+
     </div>
   )
 }

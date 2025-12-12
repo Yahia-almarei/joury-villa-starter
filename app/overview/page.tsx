@@ -15,18 +15,70 @@ import {
   Wind,
   Flame,
   Dog,
-  CreditCard,
   Clock,
   Waves,
   Trees,
   Home
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/use-translation";
+import { AlertCircle } from "lucide-react";
+
+interface HouseRule {
+  id: string
+  title: string
+  description: string
+  icon: string
+  is_active: boolean
+  order_index: number
+}
 
 export default function OverviewPage() {
-  const { t } = useTranslation('overview');
+  const { t, language } = useTranslation('overview');
   const [activeTab, setActiveTab] = useState('description');
+  const [houseRules, setHouseRules] = useState<HouseRule[]>([]);
+  const [houseRulesLoading, setHouseRulesLoading] = useState(true);
+
+  // Fetch house rules
+  useEffect(() => {
+    const fetchHouseRules = async () => {
+      try {
+        const response = await fetch(`/api/house-rules?lang=${language}`);
+        if (response.ok) {
+          const data = await response.json();
+          setHouseRules(data.houseRules || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch house rules:', error);
+      } finally {
+        setHouseRulesLoading(false);
+      }
+    };
+
+    fetchHouseRules();
+  }, [language]);
+
+  const getIconComponent = (iconName: string) => {
+    const iconMap: any = {
+      Clock,
+      Home,
+      AlertCircle,
+      Users,
+      Bed,
+      Bath,
+      Car,
+      Wifi,
+      Utensils,
+      Coffee,
+      Tv,
+      Wind,
+      Flame,
+      Dog,
+      Waves,
+      Trees
+    };
+    return iconMap[iconName] || Clock;
+  };
 
   const scrollToSection = (sectionId: string) => {
     setActiveTab(sectionId);
@@ -37,32 +89,89 @@ export default function OverviewPage() {
   };
 
   const galleryImages = [
-    { src: '/images/homepage-pic-1.jpg', alt: t('pictures.gallery.exterior') },
-    { src: '/images/homepage-pic-2.jpg', alt: t('pictures.gallery.livingRoom') },
-    { src: '/images/homepage-pic-3.jpg', alt: t('pictures.gallery.poolArea') },
-    { src: '/images/gallery/pic4.jpg', alt: t('pictures.gallery.bedroom') },
-    { src: '/images/gallery/pic5.jpg', alt: t('pictures.gallery.kitchen') },
-    { src: '/images/gallery/pic6.jpg', alt: t('pictures.gallery.gardenView') }
+    { src: '/images/Homepage.png', alt: t('pictures.gallery.exterior') },
+    { src: '/images/Homepage1.png', alt: t('pictures.gallery.exterior') },
+    { src: '/images/Homepage2.png', alt: t('pictures.gallery.exterior') },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section with Main Image */}
-      <div className="relative h-[500px] w-full">
-        <Image
-          src="/images/homepage-pic-1.jpg"
-          alt={t('hero.alt')}
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        
+      {/* Hero Section with Image Grid */}
+      <div className="relative h-[400px] md:h-[500px] w-full">
+        <div className="container mx-auto px-4 h-full">
+          {/* Mobile: Single large image */}
+          <div className="md:hidden h-full relative rounded-lg overflow-hidden">
+            <Image
+              src="/images/Homepage.png"
+              alt={t('hero.alt')}
+              fill
+              className="object-cover"
+              priority
+              sizes="100vw"
+            />
+          </div>
+
+          {/* Desktop: Grid layout */}
+          <div className="hidden md:grid grid-cols-3 gap-4 h-full">
+            {/* Large Image - Takes 2 columns */}
+            <div className="col-span-2 relative rounded-lg overflow-hidden">
+              <Image
+                src="/images/Homepage.png"
+                alt={t('hero.alt')}
+                fill
+                className="object-cover"
+                priority
+                sizes="(max-width: 768px) 100vw, 66vw"
+              />
+            </div>
+
+            {/* Small Images Grid - 2x2 Grid */}
+            <div className="grid grid-cols-2 grid-rows-2 gap-4">
+              <div className="relative rounded-lg overflow-hidden">
+                <Image
+                  src="/images/Homepage1.png"
+                  alt="Villa exterior view"
+                  fill
+                  className="object-cover"
+                  sizes="20vw"
+                />
+              </div>
+              <div className="relative rounded-lg overflow-hidden">
+                <Image
+                  src="/images/Homepage2.png"
+                  alt="Villa bedroom"
+                  fill
+                  className="object-cover"
+                  sizes="20vw"
+                />
+              </div>
+              <div className="relative rounded-lg overflow-hidden">
+                <Image
+                  src="/images/Homepage.png"
+                  alt="Villa pool area"
+                  fill
+                  className="object-cover"
+                  sizes="20vw"
+                />
+              </div>
+              <div className="relative rounded-lg overflow-hidden">
+                <Image
+                  src="/images/Homepage1.png"
+                  alt="Villa kitchen"
+                  fill
+                  className="object-cover"
+                  sizes="20vw"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* View More Pictures Button */}
-        <div className="absolute bottom-8 right-8">
+        <div className="absolute bottom-4 md:bottom-8 right-4 md:right-8">
           <Link href="/gallery">
-            <Button className="bg-coral hover:bg-coral/90 text-white px-6 py-3 rounded-md flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <Button className="bg-coral hover:bg-coral/90 text-white px-4 py-2 md:px-6 md:py-3 rounded-md flex items-center gap-2 text-sm md:text-base">
+              <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               {t('hero.viewPictures')}
@@ -74,7 +183,7 @@ export default function OverviewPage() {
       {/* Navigation Tabs */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4">
-          <div className="flex gap-8">
+          <div className="flex gap-4 md:gap-8 overflow-x-auto">
             <button
               type="button"
               onClick={() => scrollToSection('description')}
@@ -136,13 +245,13 @@ export default function OverviewPage() {
         <div id="description" className="mb-12">
           <div className="bg-white rounded-lg p-8 mb-8">
             <p className="text-gray-700 mb-4">
-              {t('description.paragraph1')}
+              Experience luxury and comfort at Joury Villa, located in the vibrant heart of Miami Beach. This stunning 4-bedroom retreat combines modern amenities with coastal elegance, offering you an unforgettable stay in one of the world's most exciting destinations.
             </p>
             <p className="text-gray-700 mb-4">
-              {t('description.paragraph2')}
+              The villa features spacious accommodations for up to 14 guests, with elegantly furnished bedrooms, multiple living areas, and a fully equipped kitchen perfect for preparing meals. Step outside to discover your private oasis - a sparkling swimming pool surrounded by lush tropical gardens and comfortable seating areas.
             </p>
             <p className="text-gray-700 mb-6">
-              {t('description.paragraph3')}
+              Located just minutes from Miami Beach's main attractions, including South Beach, the Art Deco Historic District, and Ocean Drive, Joury Villa serves as your perfect base for exploring the vibrant culture and nightlife of Miami while enjoying modern comforts and amenities.
             </p>
           </div>
         </div>
@@ -451,15 +560,28 @@ export default function OverviewPage() {
           <div className="bg-white rounded-lg p-8">
             <h2 className="text-2xl font-bold mb-6">{t('houseRules.title')}</h2>
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <CreditCard className="w-5 h-5 text-gray-600" />
-                <span className="text-gray-700">{t('houseRules.creditCards')}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-gray-600" />
-                <span className="text-gray-700">{t('houseRules.checkIn')}</span>
-              </div>
-
+              {houseRulesLoading ? (
+                <div className="text-center py-4">
+                  <div className="text-gray-500">Loading house rules...</div>
+                </div>
+              ) : houseRules.length > 0 ? (
+                houseRules
+                  .filter(rule => rule.is_active)
+                  .sort((a, b) => a.order_index - b.order_index)
+                  .map((rule) => {
+                    const IconComponent = getIconComponent(rule.icon);
+                    return (
+                      <div key={rule.id} className="flex items-center gap-3">
+                        <IconComponent className="w-5 h-5 text-gray-600" />
+                        <span className="text-gray-700">{rule.description}</span>
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="text-center py-4">
+                  <div className="text-gray-500">No house rules configured</div>
+                </div>
+              )}
             </div>
           </div>
         </div>

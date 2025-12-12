@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
         *,
         customer_profiles (
           full_name,
-          phone
+          phone,
+          country
         ),
         reservations (
           id,
@@ -26,16 +27,17 @@ export async function GET(request: NextRequest) {
           status
         )
       `)
-      .order('created_at', { ascending: false })
-    
-    console.log('📊 Admin users API response:', { 
+      .order('email', { ascending: true })
+
+    console.log('📊 Admin users API full response:', {
       data: data?.map(user => ({
         email: user.email,
+        customer_profiles: user.customer_profiles,
         reservations: user.reservations?.length || 0,
         total_spent: user.reservations?.reduce((sum, res) => sum + res.total, 0) || 0
-      })), 
-      error, 
-      count: data?.length 
+      })),
+      error,
+      count: data?.length
     })
     
     if (error) {

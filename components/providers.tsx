@@ -10,7 +10,10 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider>
+    <SessionProvider
+      refetchInterval={0}           // Disable automatic token refresh
+      refetchOnWindowFocus={false}  // Don't refetch on window focus
+    >
       <LanguageProvider>
         {children}
       </LanguageProvider>

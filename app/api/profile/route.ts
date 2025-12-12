@@ -149,3 +149,71 @@ export async function PUT(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
+export async function DELETE() {
+  try {
+    const session = await auth()
+    
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check if user has any active reservations
+    const { data: activeReservations } = await supabase
+      .from('reservations')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .in('status', ['PENDING', 'AWAITING_APPROVAL', 'APPROVED', 'PAID'])
+      .gt('check_in', new Date().toISOString())
+
+    if (activeReservations && activeReservations.length > 0) {
+      return NextResponse.json({ 
+        error: 'Cannot delete account with active reservations. Please cancel or complete your reservations first.' 
+      }, { status: 400 })
+    }
+
+    // Delete in order to respect foreign key constraints
+    // 1. Delete customer profile
+    const { error: profileError } = await supabase
+      .from('customer_profiles')
+      .delete()
+      .eq('user_id', session.user.id)
+
+    if (profileError) {
+      console.error('Error deleting customer profile:', profileError)
+    }
+
+    // 2. Delete user reservations (past ones)
+    const { error: reservationsError } = await supabase
+      .from('reservations')
+      .delete()
+      .eq('user_id', session.user.id)
+
+    if (reservationsError) {
+      console.error('Error deleting reservations:', reservationsError)
+    }
+
+    // 3. Delete the user account
+    const { error: userError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', session.user.id)
+
+    if (userError) {
+      console.error('Error deleting user:', userError)
+      return NextResponse.json({ 
+        error: 'Failed to delete account' 
+      }, { status: 500 })
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Account deleted successfully' 
+    })
+  } catch (error) {
+    console.error('Delete account error:', error)
+    return NextResponse.json({ 
+      error: 'Failed to delete account' 
+    }, { status: 500 })
+  }
+}

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { useTranslation } from '@/lib/use-translation'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -159,8 +160,8 @@ export default function AdminCouponsPage() {
       const couponData: any = {
         code: formData.code.toUpperCase(),
         discount_type: formData.discount_type,
-        valid_from: formData.valid_from ? formData.valid_from.toISOString() : null,
-        valid_to: formData.valid_to ? formData.valid_to.toISOString() : null,
+        valid_from: formData.valid_from ? `${formData.valid_from.getFullYear()}-${String(formData.valid_from.getMonth() + 1).padStart(2, '0')}-${String(formData.valid_from.getDate()).padStart(2, '0')}T00:00:00.000Z` : null,
+        valid_to: formData.valid_to ? `${formData.valid_to.getFullYear()}-${String(formData.valid_to.getMonth() + 1).padStart(2, '0')}-${String(formData.valid_to.getDate()).padStart(2, '0')}T23:59:59.999Z` : null,
         min_nights: formData.min_nights ? parseInt(formData.min_nights) : null,
         is_active: formData.is_active,
         is_public: formData.is_public
@@ -334,10 +335,6 @@ export default function AdminCouponsPage() {
           <p className="text-gray-600">{t('coupons.subtitle')}</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            {t('coupons.actions.export')}
-          </Button>
           <Button
             onClick={() => setShowNewCoupon(true)}
             className="bg-coral hover:bg-coral/90"
@@ -455,7 +452,7 @@ export default function AdminCouponsPage() {
                     placeholder={t('coupons.form.minNightsPlaceholder')}
                   />
                 </div>
-                
+
                 <div>
                   <Label>{t('coupons.form.validFrom')}</Label>
                   <Popover>
@@ -500,7 +497,7 @@ export default function AdminCouponsPage() {
                     </PopoverContent>
                   </Popover>
                 </div>
-                
+
                 <div>
                   <Label>{t('coupons.form.validUntil')}</Label>
                   <Popover>
@@ -546,34 +543,35 @@ export default function AdminCouponsPage() {
                     </PopoverContent>
                   </Popover>
                 </div>
+                
               </div>
               
               <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                <div className="flex items-center space-x-3">
+                  <Switch
                     id="is_active"
                     checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="rounded border-gray-300"
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                   />
-                  <Label htmlFor="is_active">{t('coupons.form.isActive')}</Label>
+                  <Label htmlFor="is_active" className="text-sm font-medium">
+                    {t('coupons.form.isActive')}
+                  </Label>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
+                <div className="flex items-center space-x-3">
+                  <Switch
                     id="is_public"
                     checked={formData.is_public}
-                    onChange={(e) => setFormData({ ...formData, is_public: e.target.checked })}
-                    className="rounded border-gray-300"
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
                   />
-                  <Label htmlFor="is_public" className="text-sm">
-                    {t('coupons.form.isPublic')}
+                  <div className="flex flex-col">
+                    <Label htmlFor="is_public" className="text-sm font-medium">
+                      {t('coupons.form.isPublic')}
+                    </Label>
                     <div className="text-xs text-gray-500 mt-1">
                       {t('coupons.form.isPublicNote')}
                     </div>
-                  </Label>
+                  </div>
                 </div>
                 
               </div>

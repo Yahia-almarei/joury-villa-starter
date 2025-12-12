@@ -55,6 +55,24 @@ class ReviewStorage {
   getReviewById(reviewId: string): Review | undefined {
     return this.reviews.find(r => r.id === reviewId);
   }
+
+  updateReview(reviewId: string, updatedData: Partial<Omit<Review, 'id'>>): boolean {
+    const review = this.reviews.find(r => r.id === reviewId);
+    if (review) {
+      Object.assign(review, updatedData);
+      return true;
+    }
+    return false;
+  }
+
+  deleteReview(reviewId: string): boolean {
+    const index = this.reviews.findIndex(r => r.id === reviewId);
+    if (index !== -1) {
+      this.reviews.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
 }
 
 // Export a singleton instance

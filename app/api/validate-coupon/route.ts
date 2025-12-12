@@ -31,22 +31,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Check if coupon is currently valid (date range)
-    const now = new Date()
-    
-    if (coupon.valid_from && new Date(coupon.valid_from) > now) {
-      return NextResponse.json({
-        success: false,
-        error: 'Coupon is not yet valid'
-      }, { status: 400 })
-    }
-
-    if (coupon.valid_to && new Date(coupon.valid_to) < now) {
-      return NextResponse.json({
-        success: false,
-        error: 'Coupon has expired'
-      }, { status: 400 })
-    }
+    // No date validation - coupons work for any dates
 
     // Check minimum nights requirement
     if (coupon.min_nights && nights && nights < coupon.min_nights) {

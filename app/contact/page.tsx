@@ -52,29 +52,27 @@ export default function ContactPage() {
               
               <div className="space-y-6 mb-8">
                 <div 
-                  className="flex items-start space-x-4 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors"
-                  onClick={() => window.open('https://wa.me/message/ZT5DILWUIUBIM1', '_blank')}
+                  className="flex items-start space-x-4 p-3 rounded-lg"
                 >
                   <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center flex-shrink-0">
                     <MessageSquare className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{t('getInTouch.phone.title')}</h3>
-                    <p className="text-xs text-coral mt-1">{t('getInTouch.phone.clickToChat')}</p>
                   </div>
                 </div>
 
                 <div 
                   className="flex items-start space-x-4 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors"
-                  onClick={() => window.open('https://maps.app.goo.gl/DzfaFf7iVMuotAbT6?g_st=ipc', '_blank')}
+                  onClick={() => window.open('https://www.google.com/maps/search/?api=1&query=123+Ocean+Drive+Miami+Beach+FL', '_blank')}
                 >
                   <div className="w-12 h-12 bg-coral rounded-full flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{t('getInTouch.location.title')}</h3>
-                    <p className="text-gray-600">{t('getInTouch.location.address')}</p>
-                    <p className="text-sm text-gray-500">{t('getInTouch.location.description')}</p>
+                    <p className="text-gray-600">123 Ocean Drive, Miami Beach, FL 33139, USA</p>
+                    <p className="text-sm text-gray-500">Miami Beach</p>
                     <p className="text-xs text-coral mt-1">{t('getInTouch.location.clickToView')}</p>
                   </div>
                 </div>

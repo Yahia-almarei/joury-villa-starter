@@ -1,0 +1,47 @@
+{
+  "title": "Complete Your Booking",
+  "subtitle": "Review your reservation details below",
+  "reservationDetails": {
+    "title": "Reservation Details",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "nights": "Nights",
+    "nightCount": "{{count}} nights"
+  },
+  "bookingProcess": {
+    "title": "Booking Process",
+    "immediateHold": "Immediate reservation hold",
+    "pendingApproval": "Pending admin approval",
+    "emailConfirmation": "Email confirmation sent"
+  },
+  "pricingSummary": {
+    "title": "Pricing Summary",
+    "weekdayRate": "Weekday rate ({{count}} nights)",
+    "weekendRate": "Weekend rate ({{count}} nights)",
+    "total": "Total"
+  },
+  "submitButton": "Submit Booking Request",
+  "approvalNotice": "Your reservation will be held temporarily pending admin approval.",
+  "noPaymentRequired": "Security deposit payment is required at this time.",
+  "policies": {
+    "title": "Important Policies",
+    "subtitle": "Please review our policies before completing your booking",
+    "cancellation": {
+      "title": "Cancellation Policy",
+      "description": "Free cancellation up to 48 hours before check-in. Late cancellations may incur charges."
+    },
+    "checkin": {
+      "title": "Check-in/Check-out",
+      "description": "Check-in: 3:00 PM - 10:00 PM | Check-out: 11:00 AM"
+    },
+    "payment": {
+      "title": "Payment Terms",
+      "description": "Security deposit required upon approval. Full payment due before check-in."
+    },
+    "houseRules": {
+      "title": "House Rules",
+      "description": "No smoking, no parties, maximum 8 guests. Quiet hours: 10 PM - 8 AM."
+    },
+    "viewAll": "View Complete Policies"
+  }
+}

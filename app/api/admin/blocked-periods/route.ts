@@ -5,12 +5,24 @@ import { db } from '@/lib/database'
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin()
-    
+
     const { searchParams } = new URL(req.url)
     const propertyId = searchParams.get('property_id')
-    
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+
+    // If date range provided, filter by dates for performance
+    if (startDate && endDate) {
+      const blockedPeriods = await db.getBlockedPeriodsByDateRange(startDate, endDate, propertyId || undefined)
+      return NextResponse.json({
+        success: true,
+        blockedPeriods
+      })
+    }
+
+    // Fallback to all blocked periods
     const blockedPeriods = await db.getAllBlockedPeriods(propertyId || undefined)
-    
+
     return NextResponse.json({
       success: true,
       blockedPeriods

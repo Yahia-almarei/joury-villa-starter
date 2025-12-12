@@ -20,16 +20,14 @@ export default async function AdminPage() {
   let upcomingArrivals: any[] = []
   let monthlyRevenue = { _sum: { total: 0 }, _count: 0 }
   let totalUsers = 0
-  let recentActivity: any[] = []
 
   try {
     // Use Promise.allSettled to handle errors gracefully and avoid worker overload
     const results = await Promise.allSettled([
-      db.findReservationsByStatus('AWAITING_APPROVAL', 5),
+      db.findReservationsByStatus('AWAITING_APPROVAL', 3), // Reduce from 5 to 3
       db.getUpcomingArrivals(now.toISOString(), addDays(now, 7).toISOString()),
       db.getMonthlyRevenue(monthStart.toISOString(), monthEnd.toISOString()),
-      db.getUserCount('CUSTOMER'),
-      db.getRecentAuditLogs(10)
+      db.getUserCount('CUSTOMER')
     ])
 
     // Extract results with fallbacks
@@ -37,7 +35,6 @@ export default async function AdminPage() {
     upcomingArrivals = results[1].status === 'fulfilled' ? (results[1].value || []) : []
     monthlyRevenue = results[2].status === 'fulfilled' ? (results[2].value || { _sum: { total: 0 }, _count: 0 }) : { _sum: { total: 0 }, _count: 0 }
     totalUsers = results[3].status === 'fulfilled' ? (results[3].value || 0) : 0
-    recentActivity = results[4].status === 'fulfilled' ? (results[4].value || []) : []
 
   } catch (error) {
     console.error('Error fetching dashboard data:', error)
@@ -55,7 +52,6 @@ export default async function AdminPage() {
         upcomingArrivals={upcomingArrivals}
         monthlyRevenue={monthlyRevenue}
         totalUsers={totalUsers}
-        recentActivity={recentActivity}
       />
     </div>
   )

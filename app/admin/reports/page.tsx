@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
-import { 
+import {
   BarChart3,
   TrendingUp,
   Calendar,
@@ -14,7 +14,6 @@ import {
   Download,
   Filter,
   RefreshCw,
-  PieChart,
   Activity,
   Clock
 } from 'lucide-react'
@@ -66,18 +65,19 @@ export default function AdminReportsPage() {
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1)
     setDateFrom(sixMonthsAgo)
     setDateTo(now)
-    
+
     fetchAnalytics()
   }, [])
   
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (overrideAllTime?: boolean) => {
     setLoading(true)
     try {
       // Prepare date range - use "all time" if option is selected
       let fromDate, toDate
+      const useAllTime = overrideAllTime !== undefined ? overrideAllTime : isAllTime
 
-      if (isAllTime) {
-        fromDate = '2020-01-01' // Far back date for all time
+      if (useAllTime) {
+        fromDate = '2023-01-01' // Start from 2023 for all time
         toDate = new Date().toISOString().split('T')[0]
       } else {
         fromDate = dateFrom ? dateFrom.toISOString().split('T')[0] : '2024-01-01'
@@ -97,6 +97,7 @@ export default function AdminReportsPage() {
       }
 
       // Fetch analytics data from API endpoint
+      console.log('📊 Fetching analytics with:', { fromDate, toDate, groupBy, isAllTime: useAllTime })
       const response = await fetch('/api/admin/analytics', {
         method: 'POST',
         headers: {
@@ -105,7 +106,8 @@ export default function AdminReportsPage() {
         body: JSON.stringify({
           dateFrom: fromDate,
           dateTo: toDate,
-          groupBy: groupBy
+          groupBy: groupBy,
+          isAllTime: useAllTime
         })
       })
 
@@ -115,7 +117,10 @@ export default function AdminReportsPage() {
 
       const data = await response.json()
 
+      console.log('📊 Analytics API response:', data)
+
       if (data.success) {
+        console.log('📊 Setting revenue data:', data.revenueData)
         setRevenueData(data.revenueData || [])
         setBookingStats(data.bookingStats || null)
         setCustomerAnalytics(data.customerAnalytics || null)
@@ -172,7 +177,7 @@ export default function AdminReportsPage() {
     return csv
   }
 
-  const handleAllTimeToggle = () => {
+  const handleAllTimeToggle = async () => {
     const newAllTime = !isAllTime
     setIsAllTime(newAllTime)
     
@@ -183,6 +188,9 @@ export default function AdminReportsPage() {
       setDateFrom(sixMonthsAgo)
       setDateTo(now)
     }
+    
+    // Automatically fetch data when toggling all time, passing the new state
+    await fetchAnalytics(newAllTime)
   }
   
   return (
@@ -218,12 +226,14 @@ export default function AdminReportsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   const now = new Date()
                   const lastWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7)
                   setDateFrom(lastWeek)
                   setDateTo(now)
                   setIsAllTime(false)
+                  // Wait for state to update, then fetch
+                  setTimeout(() => fetchAnalytics(false), 100)
                 }}
                 disabled={isAllTime}
                 className="text-xs"
@@ -233,12 +243,13 @@ export default function AdminReportsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   const now = new Date()
                   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
                   setDateFrom(lastMonth)
                   setDateTo(now)
                   setIsAllTime(false)
+                  setTimeout(() => fetchAnalytics(false), 100)
                 }}
                 disabled={isAllTime}
                 className="text-xs"
@@ -248,12 +259,13 @@ export default function AdminReportsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   const now = new Date()
                   const lastQuarter = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
                   setDateFrom(lastQuarter)
                   setDateTo(now)
                   setIsAllTime(false)
+                  setTimeout(() => fetchAnalytics(false), 100)
                 }}
                 disabled={isAllTime}
                 className="text-xs"
@@ -263,12 +275,13 @@ export default function AdminReportsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   const now = new Date()
                   const last6Months = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
                   setDateFrom(last6Months)
                   setDateTo(now)
                   setIsAllTime(false)
+                  setTimeout(() => fetchAnalytics(false), 100)
                 }}
                 disabled={isAllTime}
                 className="text-xs"
@@ -278,12 +291,13 @@ export default function AdminReportsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   const now = new Date()
                   const thisYear = new Date(now.getFullYear(), 0, 1)
                   setDateFrom(thisYear)
                   setDateTo(now)
                   setIsAllTime(false)
+                  setTimeout(() => fetchAnalytics(false), 100)
                 }}
                 disabled={isAllTime}
                 className="text-xs"
@@ -294,16 +308,16 @@ export default function AdminReportsPage() {
 
             {/* All Time Toggle */}
             <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="all-time"
-                checked={isAllTime}
-                onChange={handleAllTimeToggle}
-                className="h-4 w-4 text-coral border-gray-300 rounded focus:ring-coral focus:ring-2"
-              />
-              <Label htmlFor="all-time" className="text-sm font-medium">
+              <Button
+                variant={isAllTime ? "default" : "outline"}
+                size="sm"
+                onClick={handleAllTimeToggle}
+                className={`${isAllTime ? 'bg-coral hover:bg-coral/90 text-white' : 'border-coral text-coral hover:bg-coral hover:text-white'} transition-colors`}
+              >
+                <Clock className="w-4 h-4 mr-2" />
                 {t('reports.datePresets.showAllTime')}
-              </Label>
+                {isAllTime && " ✓"}
+              </Button>
             </div>
 
             {/* Date Range Pickers (disabled when All Time is selected) */}
@@ -312,7 +326,12 @@ export default function AdminReportsPage() {
                 <Label>{t('reports.datePresets.fromDate')}</Label>
                 <DatePicker
                   date={dateFrom}
-                  onDateChange={setDateFrom}
+                  onDateChange={(date) => {
+                    setDateFrom(date)
+                    if (date && isAllTime) {
+                      setIsAllTime(false)
+                    }
+                  }}
                   placeholder={t('reports.filters.pickStartDate')}
                   disabled={isAllTime}
                   className={isAllTime ? 'opacity-50 cursor-not-allowed' : ''}
@@ -322,7 +341,12 @@ export default function AdminReportsPage() {
                 <Label>{t('reports.datePresets.toDate')}</Label>
                 <DatePicker
                   date={dateTo}
-                  onDateChange={setDateTo}
+                  onDateChange={(date) => {
+                    setDateTo(date)
+                    if (date && isAllTime) {
+                      setIsAllTime(false)
+                    }
+                  }}
                   placeholder={t('reports.filters.pickEndDate')}
                   disabled={isAllTime}
                   className={isAllTime ? 'opacity-50 cursor-not-allowed' : ''}
@@ -332,7 +356,10 @@ export default function AdminReportsPage() {
                   }}
                 />
               </div>
-              <Button onClick={fetchAnalytics}>
+              <Button onClick={() => {
+                setIsAllTime(false)
+                fetchAnalytics(false)
+              }}>
                 <Filter className="w-4 h-4 mr-2" />
                 {t('reports.datePresets.applyFilter')}
               </Button>
@@ -410,7 +437,7 @@ export default function AdminReportsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
-                {isAllTime ? t('reports.charts.allTimeRevenueTrend') : t('reports.charts.customPeriodRevenueTrend')}
+                Revenue Trend
               </CardTitle>
               <CardDescription>
                 {isAllTime
@@ -454,59 +481,6 @@ export default function AdminReportsPage() {
             </CardContent>
           </Card>
           
-          {/* Booking Analysis */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <PieChart className="w-5 h-5" />
-                {t('reports.bookingsByStatus.title')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {bookingStats ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-green-600">{t('reports.bookingStatus.confirmed')}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full"
-                          style={{ width: `${(bookingStats.confirmedBookings / bookingStats.totalBookings) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{bookingStats.confirmedBookings}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-yellow-600">{t('reports.bookingStatus.pending')}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-yellow-500 h-2 rounded-full"
-                          style={{ width: `${(bookingStats.pendingBookings / bookingStats.totalBookings) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{bookingStats.pendingBookings}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-red-600">{t('reports.bookingStatus.cancelled')}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-red-500 h-2 rounded-full"
-                          style={{ width: `${(bookingStats.cancelledBookings / bookingStats.totalBookings) * 100}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">{bookingStats.cancelledBookings}</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-center py-8 text-gray-500">{t('reports.noData.message')}</p>
-              )}
-            </CardContent>
-          </Card>
         </>
       )}
     </div>

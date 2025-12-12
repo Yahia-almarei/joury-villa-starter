@@ -5,11 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, Clock, CreditCard } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Clock, CreditCard, MessageCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatCurrency } from '@/lib/utils'
 
 const supabase = createServerClient()
+
+// Helper function to check if a value is empty or not provided
+const getDisplayValue = (value: string | null | undefined, fallback = 'Not provided') => {
+  return value && value.trim() !== '' ? value.trim() : fallback
+}
 
 export default async function AccountPage() {
   const session = await auth()
@@ -18,6 +23,7 @@ export default async function AccountPage() {
     redirect('/auth/signin?callbackUrl=/account')
   }
 
+  // First, get user data with customer profile
   const { data: users } = await supabase
     .from('users')
     .select(`
@@ -26,24 +32,32 @@ export default async function AccountPage() {
         full_name,
         phone,
         country
-      ),
-      reservations(
-        *,
-        properties(
-          name,
-          address
-        ),
-        payments(*)
       )
     `)
     .eq('id', session.user.id)
     .limit(1)
+
+  // Then get reservations separately
+  const { data: reservations } = await supabase
+    .from('reservations')
+    .select(`
+      *,
+      properties(
+        name,
+        address
+      )
+    `)
+    .eq('user_id', session.user.id)
 
   const user = users?.[0] as any
 
   if (!user) {
     redirect('/auth/signin')
   }
+
+  // Add reservations to user object
+  user.reservations = reservations || []
+
 
   // Sort reservations by check-in date descending
   const sortedReservations = (user.reservations || []).sort((a: any, b: any) => 
@@ -82,7 +96,7 @@ export default async function AccountPage() {
         <div>
           <h1 className="text-3xl font-bold">My Account</h1>
           <p className="text-muted-foreground">
-            Welcome back, {user.customer_profiles?.[0]?.full_name || user.email}
+            Welcome back, {user.customer_profiles?.full_name || user.customer_profiles?.[0]?.full_name || user.email}
           </p>
         </div>
         <Link href="/availability">
@@ -106,15 +120,15 @@ export default async function AccountPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-              <p className="font-medium">{user.customer_profiles?.[0]?.full_name || 'Not provided'}</p>
+              <p className="font-medium">{getDisplayValue(user.customer_profiles?.full_name || user.customer_profiles?.[0]?.full_name)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Phone</label>
-              <p className="font-medium">{user.customer_profiles?.[0]?.phone || 'Not provided'}</p>
+              <p className="font-medium">{getDisplayValue(user.customer_profiles?.phone || user.customer_profiles?.[0]?.phone)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Country</label>
-              <p className="font-medium">{user.customer_profiles?.[0]?.country || 'Not provided'}</p>
+              <p className="font-medium">{getDisplayValue(user.customer_profiles?.country || user.customer_profiles?.[0]?.country)}</p>
             </div>
           </div>
           <div className="pt-4">
@@ -147,10 +161,6 @@ export default async function AccountPage() {
                       <span className="flex items-center gap-1">
                         <CalendarDays className="h-4 w-4" />
                         {format(new Date(reservation.check_in), 'MMM d')} - {format(new Date(reservation.check_out), 'MMM d, yyyy')}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {reservation.adults} adults, {reservation.children} children
                       </span>
                     </div>
                   </div>
@@ -218,10 +228,6 @@ export default async function AccountPage() {
                           {format(new Date(reservation.check_in), 'MMM d')} - {format(new Date(reservation.check_out), 'MMM d, yyyy')} ({reservation.nights} nights)
                         </span>
                         <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          {reservation.adults} adults, {reservation.children} children
-                        </span>
-                        <span className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
                           {reservation.properties?.address}
                         </span>
@@ -235,14 +241,24 @@ export default async function AccountPage() {
                     </div>
                   </div>
                   
-                  <div className="flex gap-2">
-                    <Link href={`/account/reservations/${reservation.id}`}>
-                      <Button size="sm" variant="outline">View Details</Button>
-                    </Link>
-                    <Button size="sm" variant="outline">Request Changes</Button>
-                  </div>
                 </div>
               ))}
+              
+              {/* WhatsApp Help Section */}
+              <div className="mt-6 pt-6 border-t">
+                <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+                  <span>Need help with your reservation?</span>
+                  <a 
+                    href="https://wa.me/message/ZT5DILWUIUBIM1" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="font-medium">Contact us on WhatsApp</span>
+                  </a>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
@@ -264,7 +280,6 @@ export default async function AccountPage() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>{format(new Date(reservation.check_in), 'MMM d')} - {format(new Date(reservation.check_out), 'MMM d, yyyy')}</span>
                       <span>{reservation.nights} nights</span>
-                      <span>{reservation.adults} adults, {reservation.children} children</span>
                     </div>
                   </div>
                   <div className="text-right space-y-1">

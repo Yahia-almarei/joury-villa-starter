@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin-auth'
 import { db } from '@/lib/database'
+import { sendBookingCancelled } from '@/lib/email-service'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -29,14 +30,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     
     // Update reservation status to CANCELLED
     const updatedReservation = await db.updateReservation(reservationId, {
-      status: 'CANCELLED',
-      cancelled_at: new Date().toISOString(),
-      cancellation_reason: reason || 'Cancelled by admin'
+      status: 'CANCELLED'
     })
-    
+
+    // Send cancellation email to customer and admin notification
+    await sendBookingCancelled(reservationId, reason)
+
     return NextResponse.json({
       success: true,
-      message: 'Reservation cancelled successfully',
+      message: 'Reservation cancelled successfully and notification emails sent',
       reservation: updatedReservation
     })
   } catch (error) {

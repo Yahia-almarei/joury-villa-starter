@@ -297,54 +297,95 @@ export default function AdminPricingPage() {
         </Card>
       )}
       
-      {/* Base Settings */}
+      {/* Pricing Settings */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Weekday Pricing */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-blue-600" />
+              {t('pricing.weekdayPricing.title')}
+            </CardTitle>
+            <CardDescription>{t('pricing.weekdayPricing.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {baseSettings && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="weekday-price">{t('pricing.weekdayPricing.pricePerNight')}</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      id="weekday-price"
+                      type="number"
+                      placeholder="500"
+                      value={baseSettings.weekday_price_night}
+                      onChange={(e) => setBaseSettings({
+                        ...baseSettings,
+                        weekday_price_night: parseInt(e.target.value) || 0
+                      })}
+                      className="pl-10 text-lg font-semibold"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {t('pricing.weekdayPricing.appliedTo')}
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Weekend Pricing */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-orange-600" />
+              {t('pricing.weekendPricing.title')}
+            </CardTitle>
+            <CardDescription>{t('pricing.weekendPricing.description')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {baseSettings && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="weekend-price">{t('pricing.weekendPricing.pricePerNight')}</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      id="weekend-price"
+                      type="number"
+                      placeholder="600"
+                      value={baseSettings.weekend_price_night}
+                      onChange={(e) => setBaseSettings({
+                        ...baseSettings,
+                        weekend_price_night: parseInt(e.target.value) || 0
+                      })}
+                      className="pl-10 text-lg font-semibold"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {t('pricing.weekendPricing.appliedTo')}
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Settings */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5" />
-            Weekday & Weekend Pricing Settings
+            {t('pricing.additionalSettings.title')}
           </CardTitle>
-          <CardDescription>Configure different pricing for weekdays (Sun-Wed) and weekends (Thu-Sat)</CardDescription>
+          <CardDescription>{t('pricing.additionalSettings.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           {baseSettings && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div>
-                <Label htmlFor="weekday-price">Weekday Price per Night (Sun-Wed)</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="weekday-price"
-                    type="number"
-                    placeholder="500"
-                    value={baseSettings.weekday_price_night}
-                    onChange={(e) => setBaseSettings({
-                      ...baseSettings,
-                      weekday_price_night: parseInt(e.target.value) || 0
-                    })}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="weekend-price">Weekend Price per Night (Thu-Sat)</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="weekend-price"
-                    type="number"
-                    placeholder="600"
-                    value={baseSettings.weekend_price_night}
-                    onChange={(e) => setBaseSettings({
-                      ...baseSettings,
-                      weekend_price_night: parseInt(e.target.value) || 0
-                    })}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
               <div>
                 <Label htmlFor="cleaning-fee">{t('pricing.baseSettings.cleaningFee')}</Label>
                 <div className="relative">
@@ -446,19 +487,6 @@ export default function AdminPricingPage() {
       {/* Custom Date Pricing */}
       <CustomPricingCalendar onPricingUpdate={() => console.log('Custom pricing updated')} />
       
-      {/* Help Section */}
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>{t('pricing.help.title')}</strong>
-          <ul className="mt-2 space-y-1 text-sm">
-            <li><strong>Weekday Price:</strong> Base rate for Sunday through Wednesday nights</li>
-            <li><strong>Weekend Price:</strong> Base rate for Thursday through Saturday nights (weekend in Israel)</li>
-            <li><strong>Cleaning Fee:</strong> One-time fee added to each reservation</li>
-            <li><strong>VAT:</strong> Tax percentage applied to subtotal</li>
-          </ul>
-        </AlertDescription>
-      </Alert>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
+import { sendBookingApproved } from '@/lib/email-service'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -21,13 +22,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     
     // Update reservation status to APPROVED
     const updatedReservation = await db.updateReservation(reservationId, {
-      status: 'APPROVED',
-      approved_at: new Date().toISOString()
+      status: 'APPROVED'
     })
-    
+
+    // Send approval email to customer
+    await sendBookingApproved(reservationId)
+
     return NextResponse.json({
       success: true,
-      message: 'Reservation approved successfully',
+      message: 'Reservation approved successfully and confirmation email sent',
       reservation: updatedReservation
     })
   } catch (error) {

@@ -17,6 +17,18 @@ import { Textarea } from '@/components/ui/textarea'
 import { Calendar, Loader2, AlertCircle } from 'lucide-react'
 import { format, parseISO, isBefore, isAfter, isSameDay, addDays } from 'date-fns'
 
+// Helper function to safely format dates
+const formatDate = (dateString: string | null | undefined, formatStr: string) => {
+  if (!dateString) return 'N/A'
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'Invalid date'
+    return format(date, formatStr)
+  } catch {
+    return 'Invalid date'
+  }
+}
+
 interface Reservation {
   id: string
   check_in: string
@@ -216,8 +228,8 @@ export function RescheduleDialog({
               <h4 className="font-medium text-gray-900 mb-2">Current Reservation</h4>
               <div className="space-y-1 text-sm text-gray-600">
                 <p><strong>Guest:</strong> {reservation.users.customer_profiles?.[0]?.full_name || reservation.users.email}</p>
-                <p><strong>Property:</strong> {reservation.properties.name}</p>
-                <p><strong>Current Dates:</strong> {format(new Date(reservation.check_in), 'MMM dd')} - {format(new Date(reservation.check_out), 'MMM dd, yyyy')} ({reservation.nights} nights)</p>
+                <p><strong>Property:</strong> {reservation.properties?.name || 'Joury Villa'}</p>
+                <p><strong>Current Dates:</strong> {formatDate(reservation.check_in, 'MMM dd')} - {formatDate(reservation.check_out, 'MMM dd, yyyy')} ({reservation.nights} nights)</p>
               </div>
             </div>
 

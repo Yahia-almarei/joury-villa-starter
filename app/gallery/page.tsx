@@ -12,16 +12,12 @@ export default function GalleryPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
   const galleryImages = [
-    'pic1.jpg', 'pic3.jpg', 'pic4.jpg', 'pic5.jpg', 'pic6.jpg', 'pic7.jpg',
-    'pic8.jpg', 'pic9.jpg', 'pic10.jpg', 'pic11.jpg', 'pic12.jpg', 'pic13.jpg',
-    'pic14.jpg', 'pic15.jpg', 'pic16.jpg', 'pic18.jpg', 'pic19.jpg', 'pic20.jpg',
-    'pic21.jpg', 'pic22.jpg', 'pic23.jpg', 'pic24.jpg', 'pic25.jpg', 'pic 26.jpg',
-    'pic27.jpg', 'pic29.jpg', 'pic30.jpg', 'pic31.jpg', 'pic32.jpg', 'pic33.jpg', 'pic34.jpg'
+    'Homepage.png', 'Homepage1.png', 'Homepage2.png'
   ];
 
   const openImage = (index: number) => {
     setCurrentImageIndex(index);
-    setSelectedImage(`/images/gallery/${galleryImages[index]}`);
+    setSelectedImage(`/images/${galleryImages[index]}`);
   };
 
   const nextImage = () => {
@@ -81,13 +77,13 @@ export default function GalleryPage() {
         {/* Photo Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {galleryImages.map((image, index) => (
-            <div 
+            <div
               key={index}
               className="relative h-64 rounded-lg overflow-hidden shadow-lg cursor-pointer transform transition-transform hover:scale-105"
               onClick={() => openImage(index)}
             >
               <Image
-                src={`/images/gallery/${image}`}
+                src={`/images/${image}`}
                 alt={`${t('images.altText')} ${index + 1}`}
                 fill
                 className="object-cover"
@@ -102,6 +98,28 @@ export default function GalleryPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Instagram Link Section */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center justify-center p-6 bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div
+              className="flex items-center space-x-3 text-white"
+            >
+              {/* Instagram Icon */}
+              <svg
+                className="w-8 h-8"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+              <div className="text-left">
+                <div className="font-semibold text-lg">{t('instagram.title')}</div>
+                <div className="text-sm text-white/80">{t('instagram.subtitle')}</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* CTA Section */}

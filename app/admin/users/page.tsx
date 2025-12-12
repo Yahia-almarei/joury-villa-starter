@@ -3,6 +3,18 @@
 import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { format } from 'date-fns'
+
+// Helper function to safely format dates
+const formatDate = (dateString: string | null | undefined, formatStr: string) => {
+  if (!dateString) return 'N/A'
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'Invalid date'
+    return format(date, formatStr)
+  } catch {
+    return 'Invalid date'
+  }
+}
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -45,11 +57,15 @@ interface User {
   email: string
   role: string
   state: string
-  created_at: string
   customer_profiles?: {
     full_name?: string
     phone?: string
-  }[]
+    country?: string
+  } | {
+    full_name?: string
+    phone?: string
+    country?: string
+  }[] | null
   reservations?: {
     id: string
     total: number
@@ -65,8 +81,17 @@ export default function AdminUsersPage() {
   const [filterRole, setFilterRole] = useState('all')
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  
+
   const supabase = createClientComponentClient()
+
+  // Helper function to get customer profile data (handles both object and array formats)
+  const getProfile = (user: User) => {
+    if (!user.customer_profiles) return null
+    if (Array.isArray(user.customer_profiles)) {
+      return user.customer_profiles[0] || null
+    }
+    return user.customer_profiles
+  }
   
   useEffect(() => {
     console.log('🔧 Component mounted - fetching users with bookings')
@@ -146,17 +171,44 @@ export default function AdminUsersPage() {
       alert(t('users.alerts.emailError'))
     }
   }
+
+  const deleteAccount = async (userId: string, userEmail: string) => {
+    const confirmed = confirm(`Are you sure you want to delete the account for ${userEmail}? This action cannot be undone.`)
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Error deleting user:', result)
+        alert(`Error: ${result.error || 'Unknown error'}`)
+        return
+      }
+
+      fetchUsers()
+      alert('Account deleted successfully')
+    } catch (error) {
+      console.error('Error:', error)
+      alert(`Error: ${error}`)
+    }
+  }
   
   const filteredUsers = users.filter(user => {
-    const matchesSearch = searchTerm === '' || 
+    const profile = getProfile(user)
+    const matchesSearch = searchTerm === '' ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.customer_profiles?.[0]?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    
+      profile?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+
     const matchesRole = filterRole === 'all' || user.role === filterRole
     const matchesStatus = filterStatus === 'all' ||
       (filterStatus === 'blocked' && user.state === 'blocked') ||
       (filterStatus === 'active' && user.state === 'active')
-    
+
     return matchesSearch && matchesRole && matchesStatus
   })
   
@@ -181,12 +233,6 @@ export default function AdminUsersPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">{t('users.title')}</h1>
           <p className="text-gray-600">{t('users.subtitle')}</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            {t('users.actions.exportUsers')}
-          </Button>
         </div>
       </div>
       
@@ -310,17 +356,19 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
+                  {filteredUsers.map((user) => {
+                    const profile = getProfile(user)
+                    return (
                     <tr key={user.id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
                         <div>
                           <div className="font-medium">
-                            {user.customer_profiles?.[0]?.full_name || t('users.table.userInfo.noName')}
+                            {profile?.full_name || t('users.table.userInfo.noName')}
                           </div>
                           <div className="text-sm text-gray-600">{user.email}</div>
-                          {user.customer_profiles?.[0]?.phone && (
+                          {profile?.phone && (
                             <div className="text-sm text-gray-500">
-                              {user.customer_profiles[0].phone}
+                              {profile.phone}
                             </div>
                           )}
                         </div>
@@ -350,7 +398,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="p-4">
                         <div className="text-sm text-gray-600">
-                          {format(new Date(user.created_at), 'MMM dd, yyyy')}
+                          N/A
                         </div>
                       </td>
                       <td className="p-4 text-right">
@@ -365,33 +413,99 @@ export default function AdminUsersPage() {
                                 <Eye className="w-4 h-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
+                            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>{t('users.dialog.title')}</DialogTitle>
                                 <DialogDescription>
                                   {t('users.dialog.description').replace('{email}', selectedUser?.email || '')}
                                 </DialogDescription>
                               </DialogHeader>
-                              {selectedUser && (
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <h4 className="font-semibold">{t('users.dialog.basicInfo')}</h4>
-                                      <p><strong>{t('users.dialog.name')}</strong> {selectedUser.customer_profiles?.[0]?.full_name || t('users.dialog.notProvided')}</p>
-                                      <p><strong>{t('users.dialog.email')}</strong> {selectedUser.email}</p>
-                                      <p><strong>{t('users.dialog.phone')}</strong> {selectedUser.customer_profiles?.[0]?.phone || t('users.dialog.notProvided')}</p>
-                                      <p><strong>{t('users.dialog.role')}</strong> {selectedUser.role}</p>
+                              {selectedUser && (() => {
+                                const selectedProfile = getProfile(selectedUser)
+                                return (
+                                <div className="space-y-6">
+                                  {/* User Information */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                      <h4 className="font-semibold text-lg border-b pb-2">{t('users.dialog.basicInfo')}</h4>
+                                      <div className="space-y-2">
+                                        <div>
+                                          <p className="text-sm text-gray-500">{t('users.dialog.name')}</p>
+                                          <p className="font-medium">{selectedProfile?.full_name || t('users.dialog.notProvided')}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-gray-500">{t('users.dialog.email')}</p>
+                                          <p className="font-medium break-all">{selectedUser.email}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-gray-500">{t('users.dialog.phone')}</p>
+                                          <p className="font-medium">{selectedProfile?.phone || t('users.dialog.notProvided')}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-gray-500">Country</p>
+                                          <p className="font-medium">{selectedProfile?.country || t('users.dialog.notProvided')}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-gray-500">{t('users.dialog.role')}</p>
+                                          <Badge className={getRoleColor(selectedUser.role)}>{selectedUser.role}</Badge>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-gray-500">User ID</p>
+                                          <p className="font-mono text-xs break-all">{selectedUser.id}</p>
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <h4 className="font-semibold">{t('users.dialog.accountStats')}</h4>
-                                      <p><strong>{t('users.dialog.bookings')}</strong> {selectedUser.reservations?.length || 0}</p>
-                                      <p><strong>{t('users.dialog.totalSpent')}</strong> ₪{(selectedUser.reservations?.reduce((sum, reservation) => sum + reservation.total, 0) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                      <p><strong>{t('users.dialog.status')}</strong> {selectedUser.state === 'blocked' ? t('users.table.statusText.blocked') : t('users.table.statusText.active')}</p>
-                                      <p><strong>{t('users.dialog.joined')}</strong> {format(new Date(selectedUser.created_at), 'MMM dd, yyyy')}</p>
+                                    <div className="space-y-3">
+                                      <h4 className="font-semibold text-lg border-b pb-2">{t('users.dialog.accountStats')}</h4>
+                                      <div className="space-y-2">
+                                        <div>
+                                          <p className="text-sm text-gray-500">{t('users.dialog.status')}</p>
+                                          <Badge className={getStatusColor(selectedUser.state)}>
+                                            {selectedUser.state === 'blocked' ? t('users.table.statusText.blocked') : t('users.table.statusText.active')}
+                                          </Badge>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-gray-500">{t('users.dialog.bookings')}</p>
+                                          <p className="font-medium text-2xl">{selectedUser.reservations?.length || 0}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-sm text-gray-500">{t('users.dialog.totalSpent')}</p>
+                                          <p className="font-medium text-2xl">₪{(selectedUser.reservations?.reduce((sum, reservation) => sum + reservation.total, 0) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+
+                                  {/* Booking History */}
+                                  {selectedUser.reservations && selectedUser.reservations.length > 0 && (
+                                    <div className="space-y-3">
+                                      <h4 className="font-semibold text-lg border-b pb-2">Booking History</h4>
+                                      <div className="space-y-2">
+                                        {selectedUser.reservations.map((reservation, index) => (
+                                          <div key={reservation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                            <div>
+                                              <p className="font-medium">Booking #{index + 1}</p>
+                                              <p className="text-sm text-gray-600">ID: {reservation.id.slice(0, 8)}...</p>
+                                            </div>
+                                            <div className="text-right">
+                                              <p className="font-medium">₪{reservation.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                              <Badge className={
+                                                reservation.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                                                reservation.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                                                reservation.status === 'DECLINED' ? 'bg-red-100 text-red-800' :
+                                                'bg-gray-100 text-gray-800'
+                                              }>
+                                                {reservation.status}
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                                )
+                              })()}
                             </DialogContent>
                           </Dialog>
                           
@@ -422,7 +536,10 @@ export default function AdminUsersPage() {
                                 {t('users.actions.sendEmail')}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => deleteAccount(user.id, user.email)}
+                              >
                                 <AlertTriangle className="w-4 h-4 mr-2" />
                                 {t('users.actions.deleteAccount')}
                               </DropdownMenuItem>
@@ -431,7 +548,8 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )
+                  })}
                 </tbody>
               </table>
             </div>

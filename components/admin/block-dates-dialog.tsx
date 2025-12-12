@@ -17,6 +17,7 @@ import {
 import { Plus, Calendar, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useTranslation } from '@/lib/use-translation'
 
 interface BlockDatesDialogProps {
   trigger?: React.ReactNode
@@ -25,6 +26,7 @@ interface BlockDatesDialogProps {
 }
 
 export function BlockDatesDialog({ trigger, onSuccess, initialDate }: BlockDatesDialogProps) {
+  const { t } = useTranslation('admin')
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate)
@@ -113,7 +115,7 @@ export function BlockDatesDialog({ trigger, onSuccess, initialDate }: BlockDates
         body: JSON.stringify({
           startDate: dateStr,
           endDate: dateStr, // Same date for single day block
-          reason: reason || 'Blocked from calendar'
+          reason: reason || t('calendar.navigation.blockedFromCalendar')
         }),
       })
 
@@ -132,15 +134,16 @@ export function BlockDatesDialog({ trigger, onSuccess, initialDate }: BlockDates
         
         alert('Date blocked successfully!')
       } else {
+        console.error('Block date failed:', data)
         if (data.error?.includes('existing reservations') || data.conflicts) {
           alert('Cannot block this date - there is an existing reservation. Please choose a different date or cancel the reservation first.')
         } else {
-          alert(data.error || 'Failed to block date')
+          alert(`Failed to block date: ${data.error || 'Unknown error'}`)
         }
       }
     } catch (error) {
       console.error('Error blocking date:', error)
-      alert('Failed to block date - please ensure you are logged in as admin')
+      alert(`Failed to block date: ${error instanceof Error ? error.message : 'Network error'} - please ensure you are logged in as admin`)
     } finally {
       setLoading(false)
     }
@@ -149,7 +152,7 @@ export function BlockDatesDialog({ trigger, onSuccess, initialDate }: BlockDates
   const defaultTrigger = (
     <Button className="w-full justify-start" variant="outline">
       <Plus className="w-4 h-4 mr-2" />
-      Block Date
+      {t('calendar.quickActions.blockDate')}
     </Button>
   )
 
@@ -179,7 +182,7 @@ export function BlockDatesDialog({ trigger, onSuccess, initialDate }: BlockDates
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            Block Single Date
+            {t('calendar.quickActions.blockDate')}
           </DialogTitle>
           <DialogDescription>
             Block a specific date to prevent customers from booking it. Only available dates can be blocked.
@@ -204,7 +207,7 @@ export function BlockDatesDialog({ trigger, onSuccess, initialDate }: BlockDates
               />
               {selectedDate && !isDateAvailable(selectedDate) && (
                 <p className="text-sm text-red-600">
-                  This date cannot be blocked - it's either in the past, already reserved, or already blocked.
+                  This date cannot be blocked - it&apos;s either in the past, already reserved, or already blocked.
                 </p>
               )}
             </div>
@@ -228,7 +231,7 @@ export function BlockDatesDialog({ trigger, onSuccess, initialDate }: BlockDates
               type="submit" 
               disabled={loading || !selectedDate || !isDateAvailable(selectedDate || new Date())}
             >
-              {loading ? 'Blocking...' : 'Block Date'}
+              {loading ? 'Blocking...' : t('calendar.quickActions.blockDate')}
             </Button>
           </DialogFooter>
         </form>
