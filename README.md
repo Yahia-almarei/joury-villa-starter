@@ -398,4 +398,4 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
 
 ---
 
-**Joury Villa** - Experience luxury and comfort in historic Jericho 🏛️
+**Joury Villa** - Experience luxury and comfort in Miami, Florida 
